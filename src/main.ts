@@ -1,6 +1,7 @@
 import { DataAdapter, Plugin, TFile, View } from "obsidian";
 
 import { PythonShell } from 'python-shell';
+import * as fs from 'fs';
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
 
@@ -205,11 +206,9 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		console.log({dataID, commandID, dataObj, commandObj});
 
-
-		let file = this.app.vault.getAbstractFileByPath(`${this.GetDataFolder(false)}Functions.md`);
-
-		if (file === null || !(file instanceof TFile)) return;
-		let functions = await this.app.vault.read(file);
+		let adapter : ExtendedDataAdapter = this.app.vault.adapter;
+		let functions = fs.readFileSync(`${adapter.basePath}/${this.app.vault.configDir}/plugins/obsidian-canvasblocks/resources/canvasblocks-python-lib.py`, 'utf8');
+		
 		console.log(functions);
 
 		let paramterData = {};
@@ -217,18 +216,17 @@ export default class CanvasBlocksPlugin extends Plugin {
 			paramterData = canvas.data.nodes.filter(node => node.id === dataID)[0];
 		let commandData = canvas.data.nodes.filter(node => node.id === commandID)[0];
 
-		let adapter : ExtendedDataAdapter = this.app.vault.adapter;
 		// Construct the Python script
 		const pythonScript = `
 ${functions}
 
 # Set variables
-parameterData = json.loads(\"\"\"${JSON.stringify(paramterData).replace(/\\/g, '\\\\')}\"\"\")
-commandData = json.loads(\"\"\"${JSON.stringify(commandData).replace(/\\/g, '\\\\')}\"\"\")
-arrowParameters = json.loads(\"\"\"${JSON.stringify(arrowParamters).replace(/\\/g, '\\\\')}\"\"\")
-vaultPath = """${adapter.basePath}"""
-pluginFolder = """${this.GetDataFolder(false)}"""
-hasParameter = ${dataID !== null ? "True" : "False"}
+parameter_data = json.loads(\"\"\"${JSON.stringify(paramterData).replace(/\\/g, '\\\\')}\"\"\")
+command_data = json.loads(\"\"\"${JSON.stringify(commandData).replace(/\\/g, '\\\\')}\"\"\")
+arrow_parameters = json.loads(\"\"\"${JSON.stringify(arrowParamters).replace(/\\/g, '\\\\')}\"\"\")
+vault_path = """${adapter.basePath}"""
+plugin_folder = """${this.GetDataFolder(false)}"""
+has_parameter = ${dataID !== null ? "True" : "False"}
 
 ${code}
 		`;
