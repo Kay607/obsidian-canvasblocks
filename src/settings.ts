@@ -1,0 +1,31 @@
+import CanvasBlocksPlugin from "./main";
+import { App, PluginSettingTab, Setting } from "obsidian";
+
+export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
+	plugin: CanvasBlocksPlugin;
+
+	constructor(app: App, plugin: CanvasBlocksPlugin) {
+		super(app, plugin);
+		this.plugin = plugin;
+	}
+
+	display(): void {
+		let { containerEl } = this;
+
+		containerEl.empty();
+
+		new Setting(containerEl)
+				.setName("Plugin data location")
+				.setDesc("Where the plugin will save data")
+				.addText((text) =>
+				text
+					.setPlaceholder("/")
+					.setValue(this.plugin.settings.pluginFolder)
+					.onChange(async (value) => {
+						this.plugin.settings.pluginFolder = value;
+						await this.plugin.saveSettings();
+				})
+		);
+	
+	}
+}

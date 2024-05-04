@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-plugin-template",
+	"name": "obsidian-canvasblocks",
 	"version": "0.0.1",
-	"description": "A description for the plugin.",
+	"description": "Execute scripts from canvas",
 	"main": "main.js",
 	"scripts": {
 		"setup": "git submodule update --init --recursive && npm i && npx ts-node --esm external/obsidian-plugin-scripts/setup.mts",
@@ -13,7 +13,7 @@
 		"obsidian-plugin",
 		"typescript"
 	],
-	"author": "Zachatoo",
+	"author": "Kay606",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^16.11.6",
@@ -24,5 +24,8 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "^4.9.0"
+	},
+	"dependencies": {
+		"python-shell": "^5.0.0"
 	}
 }
