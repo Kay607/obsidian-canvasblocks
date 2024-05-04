@@ -1,0 +1,11 @@
+{
+	"id": "obsidian-plugin-template",
+	"name": "Obsidian plugin template",
+	"version": "0.0.1",
+	"minAppVersion": "0.15.0",
+	"description": "A description for the plugin.",
+	"author": "Zachatoo",
+	"authorUrl": "https://zachyoung.dev",
+	"fundingUrl": "https://github.com/sponsors/Zachatoo",
+	"isDesktopOnly": false
+}
