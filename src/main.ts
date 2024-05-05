@@ -6,6 +6,8 @@ import { CanvasBlocksPluginSettingTab } from "./settings";
 import { PythonShell } from 'python-shell';
 import * as fs from 'fs'
 
+import canvasblocks_python_lib from '../resources/canvasblocks-python-lib.py'
+
 
 interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
@@ -256,15 +258,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		
 		let adapter : ExtendedDataAdapter = this.app.vault.adapter;
-		let functions = fs.readFileSync(`${adapter.basePath}/${this.app.vault.configDir}/plugins/obsidian-canvasblocks/resources/canvasblocks-python-lib.py`, 'utf8');
-		
-		console.log(functions);
 		console.log(scriptCode);
 		
 		console.log({scriptID, parameterID, scriptData, paramterData});
 		// Construct the Python script
 		const pythonScript = `
-${functions}
+${canvasblocks_python_lib}
 
 # Set variables
 parameter_data = json.loads(\"\"\"${JSON.stringify(paramterData).replace(/\\/g, '\\\\')}\"\"\")

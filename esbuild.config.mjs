@@ -38,6 +38,9 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	outfile: "main.js",
+	loader: {
+		'.py': 'text', // Handle Python files as text
+	},
 });
 
 if (prod) {
