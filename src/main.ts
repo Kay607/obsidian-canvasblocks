@@ -270,8 +270,8 @@ ${functions}
 parameter_data = json.loads(\"\"\"${JSON.stringify(paramterData).replace(/\\/g, '\\\\')}\"\"\")
 script_data = json.loads(\"\"\"${JSON.stringify(scriptData).replace(/\\/g, '\\\\')}\"\"\")
 arrow_parameters = json.loads(\"\"\"${JSON.stringify(arrowParamters).replace(/\\/g, '\\\\')}\"\"\")
-vault_path = """${adapter.basePath}"""
-plugin_folder = """${this.getDataFolder(false)}"""
+vault_path = ${JSON.stringify(adapter.basePath).replace(/\\/g, '\\\\')}
+plugin_folder = ${JSON.stringify(this.getDataFolder(false)).replace(/\\/g, '\\\\')}
 has_parameter = ${parameterID !== null ? "True" : "False"}
 
 ${scriptCode}
