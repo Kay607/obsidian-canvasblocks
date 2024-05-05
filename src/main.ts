@@ -274,7 +274,7 @@ vault_path = ${JSON.stringify(adapter.basePath).replace(/\\/g, '\\\\')}
 plugin_folder = ${JSON.stringify(this.getDataFolder(false)).replace(/\\/g, '\\\\')}
 has_parameter = ${parameterID !== null ? "True" : "False"}
 
-${scriptCode.replace(/[^\x20-\x7E]/g, '')}
+${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 		`;
 
 		console.log(pythonScript);
