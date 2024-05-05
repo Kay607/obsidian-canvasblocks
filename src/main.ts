@@ -6,7 +6,7 @@ import { CanvasBlocksPluginSettingTab } from "./settings";
 import { PythonShell } from 'python-shell';
 import * as fs from 'fs'
 
-import canvasblocks_python_lib from '../resources/canvasblocks-python-lib.py'
+import canvasblocks_python_lib from 'resources/canvasblocks-python-lib.py'
 
 
 interface ExtendedDataAdapter extends DataAdapter {
