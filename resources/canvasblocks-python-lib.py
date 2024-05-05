@@ -26,6 +26,33 @@ def install_dependency(module: str, import_name: str = None):
         output = subprocess.check_output(['pip', 'install', module], stderr=subprocess.STDOUT)
         print(output)
 
+def get_text_from_node(node_data: str) -> str|None:
+    """If node_data is a text node, the text will be returned
+    If node_data is a file node and the extension of the file is .md or .txt, the file will be read and the text returned
+    If node_data is a link node or the file extension is not accepted, None will be returned 
+
+    Args:
+        node_id (str): The ID of the node to read
+
+    Returns:
+        str|None: The text returned or None if it cannot be found
+    """
+
+    if node_data["type"] == "text":
+        return node_data["text"]
+    
+    if node_data["type"] == "file":
+        _, file_extension = os.path.splitext(node_data["file"])
+        if not file_extension[1:] in ["md","txt"]:
+            return None
+        # Warning suppressed as vault_path will be injected by the plugin
+        path = os.path.join(vault_path, node_data["file"]) # type: ignore
+        with open(path, "r") as file:
+            return file.read()
+
+
+    return None
+
 def create_text_node(text: str, x: int, y: int, width: int = 250, height: int = 60):
     """Creates a text node in the canvas
 
