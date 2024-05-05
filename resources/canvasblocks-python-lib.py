@@ -10,7 +10,7 @@ print = None
 def print(*args):
 	send_command(json.dumps({"command": "PRINT", "text": ' '.join(map(str, args))}))
 
-def InstallDependency(module: str, import_name: str = None):
+def install_dependency(module: str, import_name: str = None):
     """Installs a module required by a script
 
     Args:
