@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-canvasblocks",
 	"name": "Canvas Blocks",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"minAppVersion": "0.15.0",
 	"description": "Execute scripts from canvas",
 	"author": "Kay606",
