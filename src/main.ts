@@ -167,7 +167,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 	handleRun()
 	{
-		let view : ExtendedView|null = app.workspace.getActiveViewOfType(ItemView);
+		let view : ExtendedView|null = this.app.workspace.getActiveViewOfType(ItemView);
 		if(view === null) return;
 		if(!view.hasOwnProperty('canvas')) return;
 
@@ -213,9 +213,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 		let selectedData = this.getNodeByID(canvas, selectedID);
 		let selectedIsValidScript = await checkIsScript(this.app, selectedData);
 
-		console.log({selectedID, otherID, selectedIsValidScript});
-
-
 		if (!selectedIsValidScript && otherID === null) return;
 
 		let scriptID: string;
@@ -229,7 +226,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 		else
 		{
 			let otherData = this.getNodeByID(canvas, otherID!);
-			console.log(otherData);
 			let otherIsValidScript = await checkIsScript(this.app, otherData);
 			if (!otherIsValidScript) return;
 			
@@ -259,9 +255,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		
 		let adapter : ExtendedDataAdapter = this.app.vault.adapter;
-		console.log(scriptCode);
-		
-		console.log({scriptID, parameterID, scriptData, paramterData});
 		// Construct the Python script
 		const pythonScript = `
 ${canvasblocks_python_lib}
@@ -276,12 +269,10 @@ has_parameter = ${parameterID !== null ? "True" : "False"}
 
 ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 		`;
-
-		console.log(pythonScript);
 	
 		// Execute the Python script
 		PythonShell.runString(pythonScript, {mode: 'json'}).then((messages) => {
-			console.log(messages);
+			//console.log(messages);
 	
 			messages.forEach(message => {
 				let commandType = message.command;
