@@ -18,5 +18,5 @@ output_file_path = os.path.join(plugin_folder, output_file_name)
 output_absolute_path = os.path.join(vault_path, output_file_path)
 img.save(output_absolute_path)
 
-create_file_node(output_file_path, script_data["x"], script_data["y"]+script_data["height"]+20, script_data["width"], script_data["height"])
+create_file_node(output_file_path, script_data["x"], script_data["y"]+script_data["height"]+20, parameter_data["width"], parameter_data["height"])
 ```
