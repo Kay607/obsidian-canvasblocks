@@ -33,7 +33,7 @@ def get_text_from_node(node_data: str) -> str|None:
     If node_data is a link node, the url will be returned
 
     Args:
-        node_id (str): The ID of the node to read
+        node_data (str): The node object in JSON Canvas format
 
     Returns:
         str|None: The text returned or None if it cannot be found
