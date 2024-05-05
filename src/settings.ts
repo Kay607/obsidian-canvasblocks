@@ -20,9 +20,9 @@ export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
 				.addText((text) =>
 				text
 					.setPlaceholder("/")
-					.setValue(this.plugin.settings.pluginFolder)
+					.setValue(this.plugin.settings.dataFolder)
 					.onChange(async (value) => {
-						this.plugin.settings.pluginFolder = value;
+						this.plugin.settings.dataFolder = value;
 						await this.plugin.saveSettings();
 				})
 		);
