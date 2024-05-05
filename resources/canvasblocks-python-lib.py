@@ -29,7 +29,8 @@ def install_dependency(module: str, import_name: str = None):
 def get_text_from_node(node_data: str) -> str|None:
     """If node_data is a text node, the text will be returned
     If node_data is a file node and the extension of the file is .md or .txt, the file will be read and the text returned
-    If node_data is a link node or the file extension is not accepted, None will be returned 
+    If node_data is a file node and the extention is invalid, None will be returned
+    If node_data is a link node, the url will be returned
 
     Args:
         node_id (str): The ID of the node to read
@@ -40,6 +41,9 @@ def get_text_from_node(node_data: str) -> str|None:
 
     if node_data["type"] == "text":
         return node_data["text"]
+    
+    if node_data["type"] == "link":
+        return node_data["url"]
     
     if node_data["type"] == "file":
         _, file_extension = os.path.splitext(node_data["file"])
