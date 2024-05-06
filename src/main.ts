@@ -151,7 +151,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		this.addCommand({
 			id: "execute-canvas-script",
-			name: "Execute Canvas Script",
+			name: "Execute canvas script",
 			callback: () => {
 				this.handleRun();
 			},
