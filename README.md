@@ -34,6 +34,8 @@ file.close()
 ### Examples
 Example scripts can be found at [Examples](examples)
 
+Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default `Assets/CanvasBlocks'). This folder must be created for the scripts to work correctly
+
 ## Writing Scripts
 
 The plugin exposes several variables to the script to allow it to process parameters. All node data is provided in the [JSON Canvas](https://jsoncanvas.org/) format used by Obsidian Canvas in the form of python objects
@@ -54,11 +56,11 @@ The plugin exposes several variables to the script to allow it to process parame
 
 As well as this, the plugin contains a library for useful functions to interface with the canvas such as these and more
 
-`install_dependency`
+`install_dependency` Checks if a python module is installed and installs it with `pip` if it is not
 
-`create_text_node`
+`create_text_node` Creates a text node in the canvas
 
-`create_file_node`
+`create_file_node` Creates a file node in the canvas
 
 For more information on this, read the provided library at [Canvas Blocks Python Library](resources/canvasblocks-python-lib.py)
 
