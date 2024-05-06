@@ -1,10 +1,9 @@
-import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile } from "obsidian";
+import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import { CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
 
 import { PythonShell } from 'python-shell';
-import * as fs from 'fs'
 
 // @ts-ignore
 import canvasblocks_python_lib from '../resources/canvasblocks-python-lib.py';
@@ -14,18 +13,44 @@ interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
 }
 
-interface ExtendedView extends View {
+interface CanvasView extends ItemView {
     canvas?: any;
 }
 
+interface CanvasLeaf extends WorkspaceLeaf {
+	rebuildView(): any;
+}
+
+interface NodeTemplate {
+	pos: {
+        x: number;
+        y: number;
+    };
+    size: {
+        width: number;
+        height: number;
+    };
+    save: boolean;
+    focus: boolean;
+}
+
+interface TextNodeTemplate extends NodeTemplate {
+    text: string;
+}
+
+interface FileNodeTemplate extends NodeTemplate {
+    file: TAbstractFile | null;
+}
 
 export interface ExtendedCanvas {
 	nodes: { [id: string]: any };
 	edges: { [id: string]: any };
 	data: CanvasData;
-	view: ExtendedView
-}
+	view: CanvasView;
 
+	createTextNode(node: TextNodeTemplate): void;
+	createFileNode(node: FileNodeTemplate): void;
+}
 
 
 interface BoundingBox {
@@ -125,8 +150,8 @@ export default class CanvasBlocksPlugin extends Plugin {
 		this.addSettingTab(new CanvasBlocksPluginSettingTab(this.app, this));
 
 		this.addCommand({
-			id: "execute-console-command",
-			name: "Execute Canvas Command",
+			id: "execute-canvas-script",
+			name: "Execute Canvas Script",
 			callback: () => {
 				this.handleRun();
 			},
@@ -167,7 +192,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 	handleRun()
 	{
-		let view : ExtendedView|null = this.app.workspace.getActiveViewOfType(ItemView);
+		let view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
 		if(view === null) return;
 		if(!view.hasOwnProperty('canvas')) return;
 
@@ -280,7 +305,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 				switch (commandType) {
 					case "CREATE_TEXT_NODE":
 						{
-							(canvas as any).createTextNode({
+							canvas.createTextNode({
 								text: message.text,
 								pos: {
 									x: message.x,
@@ -299,7 +324,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 					case "CREATE_FILE_NODE":
 						{
 							let nodeFile = this.app.vault.getAbstractFileByPath(message.file);
-							(canvas as any).createFileNode({
+							canvas.createFileNode({
 								file: nodeFile,
 								pos: {
 									x: message.x,
@@ -324,7 +349,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 
 					case "REBUILD_CANVAS":
 						{
-							(canvas.view.leaf as any).rebuildView();
+							(canvas.view.leaf as CanvasLeaf).rebuildView();
 						}
 						break;
 
