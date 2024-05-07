@@ -1,4 +1,4 @@
-import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile, WorkspaceLeaf } from "obsidian";
+import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile, WorkspaceLeaf, Notice } from "obsidian";
 import { CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
@@ -364,6 +364,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 			});
 
 		}).catch ((error) => {
+			new Notice('An error has occured while running this script. Check the console for more detail.');
 			console.error('Error parsing Python script result:', error);
 		});
 

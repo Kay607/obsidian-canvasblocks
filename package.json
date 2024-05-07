@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-canvasblocks",
-	"version": "1.0.9",
+	"version": "1.1.0",
 	"description": "Execute scripts from canvas",
 	"main": "main.js",
 	"scripts": {
