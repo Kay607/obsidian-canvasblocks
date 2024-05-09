@@ -1,3 +1,6 @@
+# Required to support union typings on Python versions below 3.10.0
+from __future__ import annotations
+
 import json
 import importlib
 import subprocess

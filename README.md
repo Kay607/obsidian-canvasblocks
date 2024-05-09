@@ -68,9 +68,6 @@ For more information on this, read the provided library at [Canvas Blocks Python
 ## Installation
 
 <!-- Recommended to install from the Obsidian community store. -->
-
-Currently requires python 3.10 or later
-
 You can manually install this using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) Obsidian plugin. Generic installation instructions are available on that plugin's documentation.
 
 ## Contribution
