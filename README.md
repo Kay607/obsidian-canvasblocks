@@ -33,7 +33,7 @@ file.close()
 ### Examples
 Example scripts can be found at [Examples](examples)
 
-Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default `Assets/CanvasBlocks'). This folder must be created for the scripts to work correctly
+Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default `Assets/CanvasBlocks`). This folder must be created for the scripts to work correctly
 
 ## Writing Scripts
 
