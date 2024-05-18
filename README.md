@@ -35,6 +35,8 @@ Example scripts can be found at [Examples](examples)
 
 Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default `Assets/CanvasBlocks`). This folder must be created for the scripts to work correctly
 
+The python version used by the plugin will be automatically detected. This can be overridden using the `Python path` setting (example "F:\Program Files\Python310\python"). The path must end in the python executable name (`python`, `python.exe`, `python3` or `python3.exe`)
+
 ## Writing Scripts
 
 The plugin exposes several variables to the script to allow it to process parameters. All node data is provided in the [JSON Canvas](https://jsoncanvas.org/) format used by Obsidian Canvas in the form of python objects

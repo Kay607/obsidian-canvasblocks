@@ -5,6 +5,7 @@ import json
 import importlib
 import subprocess
 import os
+import sysconfig
 from typing import IO
 
 # Replace the default python print function with one which will call console.log in the obisidan console
@@ -26,7 +27,8 @@ def install_dependency(module: str, import_name: str = None):
     try:
         importlib.import_module(import_name)
     except ImportError:
-        output = subprocess.check_output(['pip', 'install', module], stderr=subprocess.STDOUT)
+        pip_path = sysconfig.get_path('scripts') + '/pip'
+        output = subprocess.check_output([pip_path, 'install', module], stderr=subprocess.STDOUT)
         print(output)
 
 def get_text_from_node(node_data: str) -> str|None:

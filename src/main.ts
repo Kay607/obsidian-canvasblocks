@@ -132,10 +132,12 @@ async function checkIsScript(app: App, node: CanvasNodeData): Promise<boolean>
 interface CanvasBlocksPluginSettings
 {
 	dataFolder: string;
+	pythonPath: string;
 }
 
 const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
 	dataFolder: "Assets/CanvasBlocks",
+	pythonPath: ""
 };
 
 const pythonCodeBlockLanguageName = "pycanvasblock";
@@ -295,8 +297,13 @@ has_parameter = ${parameterID !== null ? "True" : "False"}
 ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 		`;
 	
+
+		let pythonPath: string|undefined;
+		if (this.settings.pythonPath.trim() !== "")
+			pythonPath = this.settings.pythonPath;
+
 		// Execute the Python script
-		PythonShell.runString(pythonScript, {mode: 'json'}).then((messages) => {
+		PythonShell.runString(pythonScript, {mode: 'json', pythonPath: pythonPath}).then((messages) => {
 			//console.log(messages);
 	
 			messages.forEach(message => {

@@ -26,6 +26,19 @@ export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 				})
 		);
+
+		new Setting(containerEl)
+				.setName("Python path")
+				.setDesc("Override default python install")
+				.addText((text) =>
+				text
+					.setPlaceholder("python")
+					.setValue(this.plugin.settings.pythonPath)
+					.onChange(async (value) => {
+						this.plugin.settings.pythonPath = value;
+						await this.plugin.saveSettings();
+				})
+		);
 	
 	}
 }
