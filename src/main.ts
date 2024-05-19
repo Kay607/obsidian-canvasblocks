@@ -112,8 +112,7 @@ async function extractScriptText(app: App, node: CanvasNodeData): Promise<string
 	let text: string|null = await getNodeText(app, node);
 	if(text === null) return null;
 
-    let regex = new RegExp("```" + pythonCodeBlockLanguageName + "\\s*([\\s\\S]*?)```");
-    let match = regex.exec(text);
+    let match = pythonCodeBlockLanguageRegex.exec(text);
 
     // Return the text inside the first match or null if no match is found
     return match ? match[1] : null;
@@ -124,8 +123,7 @@ async function checkIsScript(app: App, node: CanvasNodeData): Promise<boolean>
 	let text: string|null = await getNodeText(app, node);
 	if(text === null) return false;
 	
-	if (text.contains("```" + pythonCodeBlockLanguageName)) return true;
-	return false;
+	return pythonCodeBlockLanguageRegex.test(text);
 }
 
 
@@ -141,6 +139,8 @@ const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
 };
 
 const pythonCodeBlockLanguageName = "pycanvasblock";
+
+const pythonCodeBlockLanguageRegex = new RegExp("```\\s*" + pythonCodeBlockLanguageName + "\\s*([\\s\\S]*?)```");
 
 export default class CanvasBlocksPlugin extends Plugin {
 	settings: CanvasBlocksPluginSettings;
