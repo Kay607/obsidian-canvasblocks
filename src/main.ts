@@ -179,16 +179,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 	}
 
 	// Returns folder name with leading and trailing '/'
-	getDataFolder(leading: boolean = true)
+	getDataFolder()
 	{
 		let folder = this.settings.dataFolder;
-		if (this.settings.dataFolder.length === 0) return "/";
-		if (this.settings.dataFolder === "/") return this.settings.dataFolder;
 
-		if (leading)
-			if(folder[0] !== "/") folder = "/" + folder;
+		if (folder === "/") return "";
 
-		if(folder[folder.length - 1] !== "/") folder = folder + "/";
 		return folder;
 	}
 
@@ -291,7 +287,7 @@ parameter_data = json.loads(\"\"\"${JSON.stringify(paramterData).replace(/\\/g, 
 script_data = json.loads(\"\"\"${JSON.stringify(scriptData).replace(/\\/g, '\\\\')}\"\"\")
 arrow_parameters = json.loads(\"\"\"${JSON.stringify(arrowParamters).replace(/\\/g, '\\\\')}\"\"\")
 vault_path = ${JSON.stringify(adapter.basePath).replace(/\\/g, '\\\\')}
-plugin_folder = ${JSON.stringify(this.getDataFolder(false)).replace(/\\/g, '\\\\')}
+plugin_folder = ${JSON.stringify(this.getDataFolder()).replace(/\\/g, '\\\\')}
 has_parameter = ${parameterID !== null ? "True" : "False"}
 
 ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
@@ -330,7 +326,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 
 					case "CREATE_FILE_NODE":
 						{
-							let nodeFile = this.app.vault.getAbstractFileByPath(message.file);
+							let nodeFile = this.app.vault.getAbstractFileByPath(message.file.replace(/\/\/|\\\\|\\/g, "/"));
 							canvas.createFileNode({
 								file: nodeFile,
 								pos: {
