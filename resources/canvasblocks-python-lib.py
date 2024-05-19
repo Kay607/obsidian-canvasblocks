@@ -12,7 +12,13 @@ from typing import IO
 send_command = print
 print = None
 def print(*args):
-	send_command(json.dumps({"command": "PRINT", "text": ' '.join(map(str, args))}))
+    """Outputs the arguments to the console"""
+    send_command(json.dumps({"command": "PRINT", "text": ' '.join(map(str, args))}))
+
+def notice(*args):
+    """Sends a notice pop up in Obsidian
+    """
+    send_command(json.dumps({"command": "NOTICE", "text": ' '.join(map(str, args))}))
 
 def install_dependency(module: str, import_name: str = None):
     """Installs a module required by a script

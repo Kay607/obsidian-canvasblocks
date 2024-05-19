@@ -360,6 +360,13 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 						{
 							console.log(message.text);
 						}
+						break;
+					
+					case "NOTICE":
+						{
+							new Notice(message.text);
+						}
+						break;
 				
 					default:
 						break;
