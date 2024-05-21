@@ -192,12 +192,18 @@ export default class CanvasBlocksPlugin extends Plugin {
 	{
 		let view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
 		if(view === null) return;
-		if(!view.hasOwnProperty('canvas')) return;
+		if(!view.hasOwnProperty('canvas')) {
+			new Notice('This command requires a canvas file to be open');
+			return;
+		}
 
 		let canvas = view.canvas;
 		
 		let selected = canvas.selection;
-		if (selected.size === 0) return;
+		if (selected.size === 0) {
+			new Notice('This command requires a node to be selected');
+			return;
+		}
 
 		// Gets the DOM object and ID
 		let selectedNode = selected.values().next().value;
@@ -236,7 +242,10 @@ export default class CanvasBlocksPlugin extends Plugin {
 		let selectedData = this.getNodeByID(canvas, selectedID);
 		let selectedIsValidScript = await checkIsScript(this.app, selectedData);
 
-		if (!selectedIsValidScript && otherID === null) return;
+		if (!selectedIsValidScript && otherID === null) { 
+			new Notice('No valid scripts are selected');
+			return;
+		}
 
 		let scriptID: string;
 		let parameterID: string|null;
@@ -250,7 +259,10 @@ export default class CanvasBlocksPlugin extends Plugin {
 		{
 			let otherData = this.getNodeByID(canvas, otherID!);
 			let otherIsValidScript = await checkIsScript(this.app, otherData);
-			if (!otherIsValidScript) return;
+			if (!otherIsValidScript) {
+				new Notice('No valid scripts are selected');
+				return;
+			}
 			
 			scriptID = otherID!;
 			parameterID = selectedID;
