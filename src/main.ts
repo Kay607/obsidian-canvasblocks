@@ -1,4 +1,4 @@
-import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile, WorkspaceLeaf, Notice } from "obsidian";
+import { DataAdapter, Plugin, TFile, View, ItemView, App, TAbstractFile, WorkspaceLeaf, Notice, normalizePath } from "obsidian";
 import { CanvasNodeData, CanvasData, CanvasTextData, CanvasFileData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
@@ -338,7 +338,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
 
 					case "CREATE_FILE_NODE":
 						{
-							let nodeFile = this.app.vault.getAbstractFileByPath(message.file.replace(/\/\/|\\\\|\\/g, "/"));
+							let nodeFile = this.app.vault.getAbstractFileByPath(normalizePath(message.file));
 							canvas.createFileNode({
 								file: nodeFile,
 								pos: {
