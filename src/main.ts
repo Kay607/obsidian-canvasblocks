@@ -134,7 +134,7 @@ interface CanvasBlocksPluginSettings
 }
 
 const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
-	dataFolder: "Assets/CanvasBlocks",
+	dataFolder: "",
 	pythonPath: ""
 };
 
