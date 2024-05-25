@@ -13,7 +13,7 @@ def resize_image(input_file, output_file, width, height=None):
         height = int(ratio * img.size[1])
 
     # Resize the image
-    img_resized = img.resize((width, height), Image.ANTIALIAS)
+    img_resized = img.resize((width, height), Image.Resampling.LANCZOS)
 
     # Save the resized image
     img_resized.save(output_file)
