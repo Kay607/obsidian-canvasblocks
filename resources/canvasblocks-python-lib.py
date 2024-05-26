@@ -64,6 +64,12 @@ if execution_type == "workflow": # type: ignore
             image_buffer = io.BytesIO(decoded_data)
             newValue = Image.open(image_buffer)
 
+        if ioType == "integer":
+            newValue = int(value)
+
+        if ioType == "float":
+            newValue = float(value)  
+
         in_data[ioName] = newValue # type: ignore
 
 
@@ -182,6 +188,9 @@ elif execution_type == "workflow": # type: ignore
                 buffered = io.BytesIO()
                 value.save(buffered, format="PNG")
                 newValue = base64.b64encode(buffered.getvalue()).decode()
+
+            if ioType == "integer" or ioType == "float":
+                newValue = str(value)
 
             out_data[ioName] = newValue # type: ignore
 

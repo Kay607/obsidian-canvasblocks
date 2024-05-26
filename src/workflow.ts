@@ -1,4 +1,4 @@
-import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, pythonCodeBlockLanguageName, canvasBlockSettingsLanguageName, canvasBlockConnectionPointLanguageName, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter } from "./main";
+import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, pythonCodeBlockLanguageName, canvasBlockSettingsLanguageName, canvasBlockConnectionPointLanguageName, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter, getNodeText } from "./main";
 import { CanvasView, ExtendedCanvas } from "./canvasdefinitions";
 import { defaultMessageHandler, executePythonString } from "./pythonexecution";
 
@@ -43,7 +43,7 @@ export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas
 
     let closestID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedData), 
         async (node: AllCanvasNodeData) => { 
-            if(node.id == selectedData.id) return true;
+            if(node.id === selectedData.id) return true;
             const hasCode = await checkContainsLanguage(plugin.app, node, pythonCodeBlockLanguageName);
             if (!hasCode) return true;
 
@@ -145,25 +145,21 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
 
                 switch (ioConnection.type) {
                     case "text":
-                        if (otherConnectionPoint.type === "text")
-                            executionData[flowName] = otherConnectionPoint.text;
-                        else if (otherConnectionPoint.type === "link")
-                            executionData[flowName] = otherConnectionPoint.url;
-                        else if (otherConnectionPoint.type === "file")
+                    case "integer":
+                    case "float":
+                        let text: string|null = await getNodeText(plugin.app, otherConnectionPoint);
+                        if (text === null)
                         {
-                            let filePath: string = otherConnectionPoint.file;
-                            let file: TAbstractFile|null = app.vault.getAbstractFileByPath(filePath);
-
-                            if(file === null) return null
-                            if(!(file instanceof TFile)) return null;
-
-                            executionData[flowName] = await app.vault.read(file);
+                            new Notice(`Failed to load node as text`);
+                            return;
                         }
+                        executionData[flowName] = text;
                         break;
+
 
                     case "image":
                         if (otherConnectionPoint.type !== "file"){
-                            new Notice("Attempted to load a non-image node as an image");
+                            new Notice("Attempted to load a non-image node (${otherConnectionPoint.file}) as an image");
                             return;
                         }
 
@@ -176,7 +172,7 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                         let image = await plugin.app.vault.readBinary(file);
                         let base64Image = Buffer.from(image).toString('base64');
                         executionData[flowName] = base64Image;
-                        
+
                         break;
 
                     case "file":

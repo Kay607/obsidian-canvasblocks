@@ -111,7 +111,7 @@ export interface CanvasBlockSetting
 }
 
 
-async function getNodeText(app: App, node: CanvasNodeData): Promise<string | null>
+export async function getNodeText(app: App, node: AllCanvasNodeData): Promise<string | null>
 {
 	let text: string;
 
@@ -121,13 +121,15 @@ async function getNodeText(app: App, node: CanvasNodeData): Promise<string | nul
 		node.type = "file";
 	}
 
-	if (node.type == "text")
+	if (node.type === "text")
+		text = node.text;
+
+	else if (node.type === "link") 
+		text = node.url;
+
+	else if(node.type === "file" && node.file.endsWith("md"))
 	{
-		text = (node as CanvasTextData).text;
-	}
-	else if(node.type == "file" && (node as CanvasFileData).file.endsWith("md"))
-	{
-		let filePath: string = (node as CanvasFileData).file;
+		let filePath: string = node.file;
 		let file: TAbstractFile|null = app.vault.getAbstractFileByPath(filePath);
 
 		if(file === null) return null
@@ -135,12 +137,12 @@ async function getNodeText(app: App, node: CanvasNodeData): Promise<string | nul
 
 		text = await app.vault.read(file);
 	}
-	else { return null; }
+	else { return node.file; }
 
 	return text;
 }
 
-export async function extractLanguageText(app: App, source: CanvasNodeData|string, language: string): Promise<string | null>
+export async function extractLanguageText(app: App, source: AllCanvasNodeData|string, language: string): Promise<string | null>
 {
 	let text: string;
 	if(typeof source === 'string')
@@ -158,7 +160,7 @@ export async function extractLanguageText(app: App, source: CanvasNodeData|strin
     return match ? match[1] : null;
 }
 
-export async function checkContainsLanguage(app: App, node: CanvasNodeData, language: string): Promise<boolean>
+export async function checkContainsLanguage(app: App, node: AllCanvasNodeData, language: string): Promise<boolean>
 {
 	let text: string|null = await getNodeText(app, node);
 	if(text === null) return false;
@@ -330,7 +332,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 			let ioConnection: IOConnection|undefined = scriptSettings.ioConnections[connectionPointData.name];
 			if(ioConnection === undefined) return;
 			
-			let connectionNode = canvas.data.nodes.find(node => node.type == "text" && node.text.includes(source));
+			let connectionNode = canvas.data.nodes.find(node => node.type === "text" && node.text.includes(source));
 			if(connectionNode === undefined) return;
 
 			let connectionEdge = canvas.data.edges.find(edge => edge.toNode === connectionNode.id || edge.fromNode === connectionNode.id)
@@ -352,6 +354,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 					color = "#AA5555";
 					break;
 
+				case "integer":
+					color = "#06aacf"
+
+				case "float":
+					color = "#13d493"
+
 				case "file":
 					color = "#55FF55";
 					break;
@@ -368,7 +376,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 			let circleSpan: HTMLSpanElement = createSpan({ text: circle });
 			circleSpan.setCssStyles({ color: color });
 
-			if(ioConnection.direction == "input")
+			if(ioConnection.direction === "input")
 			{
 				let span = el.createSpan({ cls: "canvasblock-input-node" });
 				span.appendChild(circleSpan);
@@ -430,14 +438,14 @@ export default class CanvasBlocksPlugin extends Plugin {
 		let selectionID = selectedNode.id;
 
 		let selectedData: AllCanvasNodeData = this.getNodeByID(canvas, selectionID);
-		if (selectedData.type == "group")
+		if (selectedData.type === "group")
 		{
 			handleWorkflowFromGroup(this, canvas, selectedData);
 			return;
 		}
 
 		let closestID : string|null = await canvasClosestNodeToPositionInBounds(canvas, selectedNode.bbox, 
-			(node: AllCanvasNodeData) => { return node.id == selectionID });
+			(node: AllCanvasNodeData) => { return node.id === selectionID });
 
 		this.handleCommand(canvas, selectionID, closestID);
 	}
