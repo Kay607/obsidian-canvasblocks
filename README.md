@@ -29,7 +29,7 @@ Refer to the Simple Demonstrations heading in this readme for more information
 ### Workflow
 - Go to the plugin's settings and set the `Workflow script folder`. You should then create this folder in your vault
 - Copy one of the [workflow examples](examples/Workflow) into the `Workflow script folder` folder. Each script will have 2 code blocks in it. Both are necessary
-- Run the `Canvas Blocks: Add workflow script` command and select the script which you want to add
+- Run the `Canvas Blocks: Add workflow script` command and select the script which you want to add. This is the only way to add scripts to the canvas. If you copy and paste a script, it will not work correctly. If you accidentally delete part of a script, delete the rest of it and add the script back
 - Connect all required inputs
 - Select the group (the gray box) of the script to run
 - Run the `Canvas Blocks: Execute canvas script` command to execute the script. This will run the script selected and all that are connected by its inputs. It will not execute any connected to the outputs. If the outputs are used, select the script that uses it
