@@ -335,7 +335,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 			let connectionNode = canvas.data.nodes.find(node => node.type === "text" && node.text.includes(source));
 			if(connectionNode === undefined) return;
 
-			let connectionEdge = canvas.data.edges.find(edge => edge.toNode === connectionNode.id || edge.fromNode === connectionNode.id)
+			let connectionEdge = canvas.data.edges.find(edge => edge.toNode === connectionNode!.id || edge.fromNode === connectionNode!.id)
 
 			let circle: string;
 			if (connectionEdge === undefined)
