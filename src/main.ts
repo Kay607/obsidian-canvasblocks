@@ -341,8 +341,32 @@ export default class CanvasBlocksPlugin extends Plugin {
 			else
 				circle = "⬤";
 
+			
+			let color: string;
+			switch (ioConnection.type) {
+				case "image":
+					color = "#ffff00";
+					break;
+
+				case "text":
+					color = "#AA5555";
+					break;
+
+				case "file":
+					color = "#55FF55";
+					break;
+
+				case "any":
+					color = "#0476c2";
+					break;
+			
+				default:
+					color = "#555555"
+					break;
+			}
+
 			let circleSpan: HTMLSpanElement = createSpan({ text: circle });
-			circleSpan.setCssStyles({ color: "#ffff00" });
+			circleSpan.setCssStyles({ color: color });
 
 			if(ioConnection.direction == "input")
 			{

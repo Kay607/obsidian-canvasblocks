@@ -2,28 +2,38 @@ import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInB
 import { CanvasView, ExtendedCanvas } from "./canvasdefinitions";
 import { defaultMessageHandler, executePythonString } from "./pythonexecution";
 
-import { TFile, ItemView, Notice } from "obsidian";
+import { TFile, ItemView, Notice, TAbstractFile, Vault } from "obsidian";
 import { AllCanvasNodeData, CanvasGroupData, CanvasEdgeData, CanvasFileData, CanvasTextData } from "obsidian/canvas";
 
 export function refreshNode(canvas: ExtendedCanvas, id: string)
 {
     let node = canvas.nodes.get(id);
     if(node === undefined) return;
+    
     let text = node.text;
+    if(text === undefined) return;
+
     // Set the text
+    if(node.child === undefined) return;
     node.child.previewMode.renderer.set("");
 
     // Asynchronously wait for the queued rendering task to be null
     function waitForRenderQueue() {
-        if (node.child.previewMode.renderer.queued != null) {
-            setTimeout(waitForRenderQueue, 0); // Check again after a short delay
-        } else {
-            // Once the queued rendering task is null, proceed to set the text
-            setTimeout(() => {
-                node.child.previewMode.renderer.set(text);
-            }, 0);
-        }
+        setTimeout(() => {
+            // Ignore errors from switching canvas files
+            try {
+                if (node.child.previewMode.renderer.queued != null) {
+                    waitForRenderQueue(); // Check again after a short delay
+                } else {
+                    // Once the queued rendering task is null, proceed to set the text
+                    setTimeout(() => {
+                        node.child.previewMode.renderer.set(text);
+                    }, 0);
+                }
+            } catch (error) {}
+        }, 0);
     }
+    
 
     waitForRenderQueue(); // Start waiting for the render queue to be null
 }
@@ -79,42 +89,106 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
     let executeStack: AllCanvasNodeData[] = [];
     let searchQueue: AllCanvasNodeData[] = [startScriptNode];
 
+    // Creates a list of scripts which need to be executed in order
     while (searchQueue.length > 0)
     {
+        // Get the next script to trace the connections of
         let currentScript = searchQueue.shift();
         if(currentScript === undefined) continue;
 
+        // Add the current script as the next script to be executed
         if (!executeStack.includes(currentScript)) {
             executeStack.push(currentScript);
         }
 
+        // Get the settings (inputs and outputs) of the current script
         let settingsLanguageBlock = await extractLanguageText(plugin.app, currentScript, canvasBlockSettingsLanguageName);
         if(settingsLanguageBlock === null) continue;
         let scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
 
+        // Get an array of connection nodes for the script
         let connectionPoints = scriptConnectionPoints[currentScript.id];
         for (const connectionPoint of connectionPoints)
         {
+            // Get the connection point information (script and input/output information)
             let connectionPointLanguageBlock = await extractLanguageText(plugin.app, connectionPoint, canvasBlockConnectionPointLanguageName);
             if(connectionPointLanguageBlock === null) continue;
 			let connectionPointData: ConnectionPointData = JSON.parse(connectionPointLanguageBlock);
 
+            // Get the relevant information from the script about this connection
             let ioConnection = scriptSettings.ioConnections[connectionPointData.name];
             if(ioConnection === undefined) continue;
 
+            // Ignore all output connnections as only the inputs are needed to trace back the path of scripts
             if(ioConnection.direction === "output") continue;
 
+            // Get the edges that connect the input connection node to the data / output connection node of another script
             let connectionEdge = edges.find(edge => edge.toNode === connectionPoint.id);
             if(connectionEdge === undefined) continue;
 
             let otherConnectionID = connectionEdge.fromNode;
             if(otherConnectionID === undefined) continue;
-
+            
+            // Get the node attached to this edge
             let otherConnectionPoint = nodes.find(node => node.id === otherConnectionID);
             if(otherConnectionPoint === undefined) continue;
 
+            // Try to get the connection data
             let otherConnectionPointLanguageBlock = await extractLanguageText(plugin.app, otherConnectionPoint, canvasBlockConnectionPointLanguageName);
-            if(otherConnectionPointLanguageBlock === null) continue;
+            
+            // If it is not a connection, process the node as a file/text node
+            if(otherConnectionPointLanguageBlock === null)
+            {
+                // Immediately add the node data as there is no script to process first
+                let flowName = `${otherConnectionID}_NODE}`;
+                dataFlow[`${currentScript.id}_${connectionPointData.name}`] = flowName
+
+                switch (ioConnection.type) {
+                    case "text":
+                        if (otherConnectionPoint.type === "text")
+                            executionData[flowName] = otherConnectionPoint.text;
+                        else if (otherConnectionPoint.type === "link")
+                            executionData[flowName] = otherConnectionPoint.url;
+                        else if (otherConnectionPoint.type === "file")
+                        {
+                            let filePath: string = otherConnectionPoint.file;
+                            let file: TAbstractFile|null = app.vault.getAbstractFileByPath(filePath);
+
+                            if(file === null) return null
+                            if(!(file instanceof TFile)) return null;
+
+                            executionData[flowName] = await app.vault.read(file);
+                        }
+                        break;
+
+                    case "image":
+                        if (otherConnectionPoint.type !== "file"){
+                            new Notice("Attempted to load a non-image node as an image");
+                            return;
+                        }
+
+                        let file: TAbstractFile|null = plugin.app.vault.getAbstractFileByPath(otherConnectionPoint.file);
+                        if (file === null || !(file instanceof TFile)) {
+                            new Notice(`Attempt to load image ${otherConnectionPoint.file} failed`);
+                            return;
+                        };
+
+                        let image = await plugin.app.vault.readBinary(file);
+                        let base64Image = Buffer.from(image).toString('base64');
+                        executionData[flowName] = base64Image;
+                        
+                        break;
+
+                    case "file":
+                    case "any":
+                    default:
+                        executionData[flowName] = JSON.stringify(otherConnectionPoint);
+                        break;
+                }
+
+                continue;
+            }
+
 			let otherConnectionPointData: ConnectionPointData = JSON.parse(otherConnectionPointLanguageBlock);
 
 
@@ -125,7 +199,7 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                 searchQueue.push(otherScript);
             }
 
-            dataFlow[`${currentScript.id}_${connectionPointData.name}`] = `${otherScript.id}_${otherConnectionPointData.name}`
+            dataFlow[`${currentScript.id}_${connectionPointData.name}`] = `${otherScript.id}_${otherConnectionPointData.name}`;
         }
     }
 
@@ -220,7 +294,7 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
     let padding = 20;
     let scriptWidth = 400;
     let scriptHeight = 60;
-    let connectionPointWidth = 140;
+    let connectionPointWidth = 180;
     let connectionPointHeight = 50;
 
     let tx = canvas.tx;
