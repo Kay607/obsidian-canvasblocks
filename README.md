@@ -14,34 +14,26 @@ Workflow allows more complex usage by chaining together multiple scripts. This i
 
 It is recommended that you set a hotkey for `Canvas Blocks: Execute canvas script` as you will need to execute this command every time you execute a script
 
+The python version used by the plugin will be automatically detected. This can be overridden using the `Python path` setting (example: `F:\Program Files\Python310\python`). The path must end in the python executable name (`python`, `python.exe`, `python3` or `python3.exe`)
+
 ## Usage
 ### Simple
-
 - Copy the text of one of the [examples](examples/Simple) into a canvas text node or copy it into a markdown file and drag the file into a canvas
-
 - Select a script node and run the command `Canvas Blocks: Execute canvas script` to execute it
-
 - Scripts can be given a parameter by dragging another node over the script node before executing it. The script will then use this to process
-
 - For some scripts, edges can be used for additional parameters by pointing the arrow into the script node
+- Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default is the vault's root directory). This folder must be manually created for the scripts to work correctly if it is changed from the default
 
 Refer to the Simple Demonstrations heading in this readme for more information
 
 ### Workflow
-
 - Go to the plugin's settings and set the `Workflow script folder`. You should then create this folder in your vault
-
-- Copy one of the [workflow examples](examples/Workflow) into the `Workflow script folder` folder
-
+- Copy one of the [workflow examples](examples/Workflow) into the `Workflow script folder` folder. Each script will have 2 code blocks in it. Both are necessary
 - Run the `Canvas Blocks: Add workflow script` command and select the script which you want to add
-
 - Connect all required inputs
-
 - Select the group (the gray box) of the script to run
-
 - Run the `Canvas Blocks: Execute canvas script` command to execute the script. This will run the script selected and all that are connected by its inputs. It will not execute any connected to the outputs. If the outputs are used, select the script that uses it
-
-- If you use some of the [workflow examples](examples/Workflow), you may see no change as it outputs data rather than displaying it. You may need to attach further nodes such as ![Save Image]([examples/Workflow/Save Image.md](https://github.com/Kay607/obsidian-canvasblocks/blob/main/examples/Workflow/Save%20Image.md) to see the outputs
+- If you use some of the [workflow examples](examples/Workflow), you may see no change as it outputs data rather than displaying it. You may need to attach further nodes such as ![Save Image](https://github.com/Kay607/obsidian-canvasblocks/blob/main/examples/Workflow/Save%20Image.md) to see the outputs
 
 It is recommended that you set a hotkey for `Canvas Blocks: Add workflow script` as you will need to execute this command every time you add a workflow script to the canvas
 
@@ -57,55 +49,79 @@ Refer to the Workflow Demonstrations heading in this readme for more information
 ![image](https://github.com/Kay607/obsidian-canvasblocks/assets/54263177/1a4f1235-3be4-4304-a126-e9658feb6cdb)
 
 
-Scripts can either be written as a text node in canvas or in a markdown file
-
-The code is inside of a code block using the language `pycanvasblock`
-
-```pycanvasblock
-file = get_parameter_file("r")
-text = file.read()
-file.close()
-
-file = get_parameter_file("w")
-file.write(text.upper())
-file.close()
-```
-
-### Examples
-Example scripts can be found at [Examples](examples)
-
-Some of these example scripts may output data into the plugin's data folder which can be altered in settings (default `Assets/CanvasBlocks`). This folder must be created for the scripts to work correctly
-
-The python version used by the plugin will be automatically detected. This can be overridden using the `Python path` setting (example "F:\Program Files\Python310\python"). The path must end in the python executable name (`python`, `python.exe`, `python3` or `python3.exe`)
-
 ## Writing Scripts
+You can write your own scripts for either the Simple or Workflow usage of the plugin or use the premade scripts: [Simple examples](examples/Simple) or [Workflow examples](examples/Workflow)
 
+If you want to request a script to be made, create an [issue](https://github.com/Kay607/obsidian-canvasblocks/issues) and mark it with the `script request` tag. Please fully describe the usage of the script, state whether you want a Simple or Workflow script and if possible, give an example usage
+
+### Library
+The plugin contains a library for useful functions to interface with the canvas such as these and more
+
+- `install_dependency` Checks if a python module is installed and installs it with `pip` if it is not
+- `create_text_node` Creates a text node in the canvas
+- `create_file_node` Creates a file node in the canvas
+
+For more information on this, read the provided library at [Canvas Blocks Python library](resources/canvasblocks-python-lib.py). All functions provided are well documented.
+
+### Simple
 The plugin exposes several variables to the script to allow it to process parameters. All node data is provided in the [JSON Canvas](https://jsoncanvas.org/) format used by Obsidian Canvas in the form of python objects
 
-`script_data` A copy of the script being executed is provided
+- `script_data` A copy of the script being executed is provided
+- `parameter_data` The node data of the parameter node (the node which overlaps with the script in the canvas). If none are overlapping, this will be `{}`
+- `arrow_parameters` An list containing all nodes with an edge pointing into the script
+- `vault_path` The absolute path to the root directory of the vault
+- `plugin_folder` A local path from the vault root. This is set in the settings but defaults to `Assets/CanvasBlocks`. This can be used for storing data generated by scripts
+- `has_parameter` A boolean value for whether there is a parameter node (only considers overlapping nodes, not ones linked by edges)
 
-`parameter_data` The node data of the parameter node (the node which overlaps with the script in the canvas). If none are overlapping, this will be `{}`
+### Workflow
+Each workflow script must contain a `canvasblocksettings` and `pycanvasblock` code block
 
-`arrow_parameters` An list containing all nodes with an edge pointing into the script
+The `canvasblocksettings` must be JSON in the following format:
 
-`vault_path` The absolute path to the root directory of the vault
+```json
+{
+	"ioConnections":
+	{
+		"YOUR_CONNECTION_NAME": {
+			"direction": "input|output",
+			"type": "any|image|text|file|integer|float|YOUR_DATA_TYPE"
+		}
+	}
+}
+```
 
-`plugin_folder` A local path from the vault root. This is set in the settings but defaults to `Assets/CanvasBlocks`. This can be used for storing data generated by scripts
+There can be multiple connections, more can be added by creating a new entry in the `ioConnections` dictionary where the key is the connection name. In the above example, `YOUR_CONNECTION_NAME` can be any name and the `type` can be any of the shown types or your own
 
-`has_parameter` A boolean value for whether there is a parameter node (only considers overlapping nodes, not ones linked by edges)
+See the [Workflow examples](examples/Workflow) for more examples on how to structure the `canvasblocksettings` block
 
 ---
 
-As well as this, the plugin contains a library for useful functions to interface with the canvas such as these and more
+The `pycanvasblock` block contains the python code which will be ran. The following is the data provided to the script as variables which can be used for processing
 
-`install_dependency` Checks if a python module is installed and installs it with `pip` if it is not
+- `in_data` This is the input data from to the workflow script from the previous scripts/nodes which are connected as inputs
+- `script_settings` This will be a copy of the `canvasblocksettings` code block from the script structured as a python dictionary and not as a string
+- `script_data` A copy of the script node which is being executed is provided (this will be a string containing both code blocks)
+- `vault_path` The absolute path to the root directory of the vault
+- `plugin_folder` A local path from the vault root. This is set in the settings but defaults to `Assets/CanvasBlocks`. This can be used for storing data generated by scripts
 
-`create_text_node` Creates a text node in the canvas
+#### Handling inputs and outputs
+The `in_data` variable will contain a dictionary. The key to the dictionary will be the name of the connection specified in the `canvasblocksettings` code block. The value will depend on the type specified in the connection.
 
-`create_file_node` Creates a file node in the canvas
+Example: `print(in_data["Text connection name"])`
 
-For more information on this, read the provided library at [Canvas Blocks Python Library](resources/canvasblocks-python-lib.py)
+- `image`: A PIL object containing an image
+- `text`: A Python `str`
+- `file`: A dictionary of a node in the [JSON Canvas](https://jsoncanvas.org/) format
+- `integer`: A Python `int`
+- `float`: A python `float`
+- `YOUR_DATA_TYPE`: Any JSON serializable object
 
+To output data you must set the value on the `out_data` dictionary. The key will be the name of the connection specified in the `canvasblocksettings` code block and the value also will depend on the type specified in the connection.
+
+You don't need to attempt to serialize the data before setting the value in the dictionary. This means that PIL images can be set directly without needing to save the image as bytes/base64 string
+Example: `out_data["Text connection name"] = "Hello world!"`
+
+Example: `out_data["Image connection name"] = Image.new('RGB', (100, 100))`
 
 ## Installation
 
@@ -117,13 +133,12 @@ You can manually install by adding `Kay607/obsidian-canvasblocks` to [BRAT](http
 
 Feel free to create an [issue](https://github.com/Kay607/obsidian-canvasblocks/issues) or [pull request](https://github.com/Kay607/obsidian-canvasblocks/pulls)
 
+If you write a script which may be useful to others, you can create a [pull request](https://github.com/Kay607/obsidian-canvasblocks/pulls) to have it added to the repository
+
 ### Building
 
 Requires npm to be installed
 
-`git clone https://github.com/Kay607/obsidian-canvasblocks --recursive` Clone the repository into the `.obsidian/plugins` folder
-
-`npm i` Install modules
-
-`npm run dev` Builds the plugin when a change is made
-
+- `git clone https://github.com/Kay607/obsidian-canvasblocks --recursive` Clone the repository into the `.obsidian/plugins` folder
+- `npm i` Install modules
+- `npm run dev` Builds the plugin when a change is made
