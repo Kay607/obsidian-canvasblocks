@@ -1,10 +1,14 @@
 # Required to support union typings on Python versions below 3.10.0
+# Versions >= 3.10.0 are also supported
 from __future__ import annotations
 
+import base64
+import io
 import json
 import importlib
 import subprocess
 import os
+import sys
 import sysconfig
 from typing import IO
 
@@ -36,6 +40,38 @@ def install_dependency(module: str, import_name: str = None):
         pip_path = sysconfig.get_path('scripts') + '/pip'
         output = subprocess.check_output([pip_path, 'install', module], stderr=subprocess.STDOUT)
         print(output)
+        
+
+# Read data dictionary from stdin
+data_dict = json.loads(sys.stdin.readline())
+
+# Create variables from the data dictionary
+for variable_name, variable_value in data_dict.items():
+    locals()[variable_name] = variable_value
+del data_dict
+
+
+if execution_type == "workflow": # type: ignore
+    install_dependency("pillow", "PIL")
+    from PIL import Image
+
+    for ioName, value in in_data.items(): # type: ignore
+        ioType = script_settings["ioConnections"][ioName]["type"] # type: ignore
+        newValue = value
+
+        if ioType == "image":
+            decoded_data = base64.b64decode(value)
+            image_buffer = io.BytesIO(decoded_data)
+            newValue = Image.open(image_buffer)
+
+        if ioType == "integer":
+            newValue = int(value)
+
+        if ioType == "float":
+            newValue = float(value)  
+
+        in_data[ioName] = newValue # type: ignore
+
 
 def get_text_from_node(node_data: str) -> str|None:
     """If node_data is a text node, the text will be returned
@@ -103,28 +139,59 @@ def set_text_node_text(node_id: str, text: str):
     """
     send_command(json.dumps({"command": "MODIFY_TEXT_NODE", "id": node_id, "text": text}))
 
-def get_parameter_file_path() -> str:
-    """Gets the path of the file of a parameter node if the node type is file. Does not check type
-
-    Returns:
-        str: The absolute path of the file
-    """
-
-    # Warnings are suppressed as vault_path and parameter_data will be injected by the plugin
-    return os.path.join(vault_path, parameter_data["file"])  # type: ignore
-
-def get_parameter_file(mode: str = "r") -> IO:
-    """Helper function to get a file handler for the parameter file
-
-    Args:
-        read_type (str, optional): The mode which the file will be opened in. Defaults to "r".
-
-    Returns:
-        IO: File handler for the parameter file
-    """
-    return open(get_parameter_file_path(), mode)
-
 def rebuild_canvas():
     """Causes the canvas to reload. Only required if set_text_node_text is called"""
 
     send_command(json.dumps({"command": "REBUILD_CANVAS"}))
+
+
+
+# execution_type will be injected into the script
+if execution_type == "simple": # type: ignore
+    def get_parameter_file_path() -> str:
+        """Gets the path of the file of a parameter node if the node type is file. Does not check type
+
+        Returns:
+            str: The absolute path of the file
+        """
+
+        # Warnings are suppressed as vault_path and parameter_data will be injected by the plugin
+        return os.path.join(vault_path, parameter_data["file"])  # type: ignore
+
+    def get_parameter_file(mode: str = "r") -> IO:
+        """Helper function to get a file handler for the parameter file
+
+        Args:
+            read_type (str, optional): The mode which the file will be opened in. Defaults to "r".
+
+        Returns:
+            IO: File handler for the parameter file
+        """
+        return open(get_parameter_file_path(), mode)
+
+
+# executionType will be injected into the script
+elif execution_type == "workflow": # type: ignore
+
+    def _return_output_data():
+        """This function is for internal use only and should not be called by scripts.
+
+        Returns the output data of a script in the workflow
+        """
+
+        # Alter output data to be serialisable
+        for ioName, value in out_data.items(): # type: ignore
+            ioType = script_settings["ioConnections"][ioName]["type"] # type: ignore
+            newValue = value
+
+            if ioType == "image":
+                buffered = io.BytesIO()
+                value.save(buffered, format="PNG")
+                newValue = base64.b64encode(buffered.getvalue()).decode()
+
+            if ioType == "integer" or ioType == "float":
+                newValue = str(value)
+
+            out_data[ioName] = newValue # type: ignore
+
+        send_command(json.dumps({"command": "RETURN_OUTPUT", "data": out_data})) # type: ignore

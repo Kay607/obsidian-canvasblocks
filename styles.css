@@ -1,0 +1,19 @@
+.canvasblock-input-node {
+    margin-left: -20px;
+}
+
+.canvasblock-output-node {
+    text-align: right;
+    margin-right: -30px;
+}
+
+
+.block-language-canvasblockconnectionpoint {
+    position: relative; /* Ensure positioning context */
+}
+
+.block-language-canvasblockconnectionpoint .canvasblock-output-node {
+    position: absolute; /* Position the span absolutely */
+    right: 0; /* Align to the right */
+    top: -5px;
+}
