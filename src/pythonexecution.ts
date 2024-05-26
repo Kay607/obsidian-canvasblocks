@@ -89,7 +89,7 @@ export async function defaultMessageHandler(canvas: ExtendedCanvas, message: any
 }
 
 export async function executePythonString(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptCode: string, injectionData: object, messageCallback: (canvas: ExtendedCanvas, message: any) => any = defaultMessageHandler, errorCallback: (canvas: ExtendedCanvas, error: string) => void = defaultErrorHandler) {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<boolean>((resolve, reject) => {
         const pythonScript = `
 ${canvasblocks_python_lib}
 ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
@@ -126,12 +126,13 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
             if(errorMessage.length > 0)
             {
                 await errorCallback(canvas, errorMessage);
+                resolve(false);
             }
 
             for (let message of messageQueue) {
                 await messageCallback(canvas, message);
             }
-            resolve();
+            resolve(true);
         });
     });
 }
