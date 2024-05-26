@@ -43,7 +43,8 @@ def install_dependency(module: str, import_name: str = None):
         
 
 # Read data dictionary from stdin
-data_dict = json.loads(sys.stdin.readline())
+data_from_node = sys.stdin.buffer.readline().decode('utf-8').strip()
+data_dict = json.loads(data_from_node)
 
 # Create variables from the data dictionary
 for variable_name, variable_value in data_dict.items():

@@ -103,7 +103,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
         const tempFile = tmpdir() + sep + `pythonShellFile${randomInt}.py`
         fs.writeFileSync(tempFile, pythonScript);
 
-        let pyshell = new PythonShell(tempFile, {mode: 'json', pythonPath: pythonPath});
+        let pyshell = new PythonShell(tempFile, {mode: 'json', encoding: 'utf-8', pythonPath: pythonPath});
         pyshell.send(injectionData);
 
         // Listen for 'error' and 'stderr' events to catch any errors
