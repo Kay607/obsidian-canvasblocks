@@ -11,14 +11,19 @@ import { PythonShell } from 'python-shell';
 import canvasblocks_python_lib from '../resources/canvasblocks-python-lib.py';
 import { Notice, normalizePath } from 'obsidian';
 
+export interface BaseMessage {
+    command: string;
+    [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+}
+
 export function defaultErrorHandler(canvas: ExtendedCanvas, error: string): void {
     new Notice('An error has occured while running this script. Check the console for more detail.');
 	console.error('Error parsing Python script result:', error);
 }
 
-export async function defaultMessageHandler(canvas: ExtendedCanvas, message: any)
+export async function defaultMessageHandler(canvas: ExtendedCanvas, message: BaseMessage)
 {
-    let commandType = message.command;
+    const commandType = message.command;
     switch (commandType) {
         case "CREATE_TEXT_NODE":
             {
@@ -40,7 +45,7 @@ export async function defaultMessageHandler(canvas: ExtendedCanvas, message: any
 
         case "CREATE_FILE_NODE":
             {
-                let nodeFile = this.app.vault.getAbstractFileByPath(normalizePath(message.file));
+                const nodeFile = this.app.vault.getAbstractFileByPath(normalizePath(message.file));
                 canvas.createFileNode({
                     file: nodeFile,
                     pos: {
@@ -88,8 +93,14 @@ export async function defaultMessageHandler(canvas: ExtendedCanvas, message: any
     return null;
 }
 
-export async function executePythonString(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptCode: string, injectionData: object, messageCallback: (canvas: ExtendedCanvas, message: any) => any = defaultMessageHandler, errorCallback: (canvas: ExtendedCanvas, error: string) => void = defaultErrorHandler) {
-    return new Promise<boolean>((resolve, reject) => {
+
+export async function executePythonString(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptCode: string, injectionData: object, 
+    // eslint-disable-next-line no-unused-vars
+    messageCallback: (canvas: ExtendedCanvas, message: BaseMessage) =>  Promise<BaseMessage|null|undefined> = defaultMessageHandler, 
+    // eslint-disable-next-line no-unused-vars
+    errorCallback: (canvas: ExtendedCanvas, error: string) => void = defaultErrorHandler) 
+{
+    return new Promise<boolean>((resolve) => {
         const pythonScript = `
 ${canvasblocks_python_lib}
 ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
@@ -103,7 +114,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
         const tempFile = tmpdir() + sep + `pythonShellFile${randomInt}.py`
         fs.writeFileSync(tempFile, pythonScript);
 
-        let pyshell = new PythonShell(tempFile, {mode: 'json', encoding: 'utf-8', pythonPath: pythonPath});
+        const pyshell = new PythonShell(tempFile, {mode: 'json', encoding: 'utf-8', pythonPath: pythonPath});
         pyshell.send(injectionData);
 
         // Listen for 'error' and 'stderr' events to catch any errors
@@ -117,7 +128,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
         });
 
 
-        let messageQueue: any[] = [];
+        const messageQueue: BaseMessage[] = [];
         pyshell.on('message', (message) => {
             messageQueue.push(message);
         });
@@ -129,7 +140,7 @@ ${scriptCode.replace(/[^\x20-\x7E\t\n]/g, '')}
                 resolve(false);
             }
 
-            for (let message of messageQueue) {
+            for (const message of messageQueue) {
                 await messageCallback(canvas, message);
             }
             resolve(true);

@@ -1,16 +1,18 @@
 import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, pythonCodeBlockLanguageName, canvasBlockSettingsLanguageName, canvasBlockConnectionPointLanguageName, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter, getNodeText } from "./main";
 import { CanvasView, ExtendedCanvas } from "./canvasdefinitions";
-import { defaultMessageHandler, executePythonString } from "./pythonexecution";
+import { BaseMessage, defaultMessageHandler, executePythonString } from "./pythonexecution";
 
-import { TFile, ItemView, Notice, TAbstractFile, Vault } from "obsidian";
+import { TFile, ItemView, Notice, TAbstractFile } from "obsidian";
 import { AllCanvasNodeData, CanvasGroupData, CanvasEdgeData, CanvasFileData, CanvasTextData } from "obsidian/canvas";
+
+
 
 export function refreshNode(canvas: ExtendedCanvas, id: string)
 {
-    let node = canvas.nodes.get(id);
+    const node = canvas.nodes.get(id);
     if(node === undefined) return;
     
-    let text = node.text;
+    const text = node.text;
     if(text === undefined) return;
 
     // Set the text
@@ -30,6 +32,7 @@ export function refreshNode(canvas: ExtendedCanvas, id: string)
                         node.child.previewMode.renderer.set(text);
                     }, 0);
                 }
+            // eslint-disable-next-line no-empty
             } catch (error) {}
         }, 0);
     }
@@ -39,9 +42,9 @@ export function refreshNode(canvas: ExtendedCanvas, id: string)
 }
 
 export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedData: CanvasGroupData) { 
-    let nodes = canvas.data.nodes;  
+    const nodes = canvas.data.nodes;  
 
-    let closestID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedData), 
+    const closestID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedData), 
         async (node: AllCanvasNodeData) => { 
             if(node.id === selectedData.id) return true;
             const hasCode = await checkContainsLanguage(plugin.app, node, pythonCodeBlockLanguageName);
@@ -54,7 +57,7 @@ export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas
 
     if (closestID === null) return;
 
-    let startScriptNode: AllCanvasNodeData|undefined = nodes.find(node => node.id === closestID);
+    const startScriptNode: AllCanvasNodeData|undefined = nodes.find(node => node.id === closestID);
     if (startScriptNode === undefined) return;
 
     executeWorkflow(plugin, canvas, startScriptNode);
@@ -62,22 +65,22 @@ export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas
 
 async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, startScriptNode: AllCanvasNodeData)
 {
-    let nodes: AllCanvasNodeData[] = canvas.data.nodes;
-    let edges: CanvasEdgeData[] = canvas.data.edges;
+    const nodes: AllCanvasNodeData[] = canvas.data.nodes;
+    const edges: CanvasEdgeData[] = canvas.data.edges;
 
-    let scriptConnectionPoints: { [key: string]: AllCanvasNodeData[] } = {};
+    const scriptConnectionPoints: { [key: string]: AllCanvasNodeData[] } = {};
 
     // Key is the to side, value is the from side
-    let dataFlow: { [key: string]: string } = {};
+    const dataFlow: { [key: string]: string } = {};
 
     // The key is the value from dataFlow, the value is json data
-    let executionData: { [key: string]: string } = {};
+    const executionData: { [key: string]: string } = {};
 
     for (const node of nodes)
     {
-        let text = await extractLanguageText(plugin.app, node, canvasBlockConnectionPointLanguageName);
+        const text = await extractLanguageText(plugin.app, node, canvasBlockConnectionPointLanguageName);
         if (text === null) continue;
-        let connectionPointData: ConnectionPointData = JSON.parse(text);
+        const connectionPointData: ConnectionPointData = JSON.parse(text);
 
         if (!scriptConnectionPoints[connectionPointData.scriptID]) {
             scriptConnectionPoints[connectionPointData.scriptID] = [];
@@ -86,14 +89,14 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
     }
 
 
-    let executeStack: AllCanvasNodeData[] = [];
-    let searchQueue: AllCanvasNodeData[] = [startScriptNode];
+    const executeStack: AllCanvasNodeData[] = [];
+    const searchQueue: AllCanvasNodeData[] = [startScriptNode];
 
     // Creates a list of scripts which need to be executed in order
     while (searchQueue.length > 0)
     {
         // Get the next script to trace the connections of
-        let currentScript = searchQueue.shift();
+        const currentScript = searchQueue.shift();
         if(currentScript === undefined) continue;
 
         // Add the current script as the next script to be executed
@@ -102,52 +105,53 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
         }
 
         // Get the settings (inputs and outputs) of the current script
-        let settingsLanguageBlock = await extractLanguageText(plugin.app, currentScript, canvasBlockSettingsLanguageName);
+        const settingsLanguageBlock = await extractLanguageText(plugin.app, currentScript, canvasBlockSettingsLanguageName);
         if(settingsLanguageBlock === null) continue;
-        let scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
+        const scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
 
         // Get an array of connection nodes for the script
-        let connectionPoints = scriptConnectionPoints[currentScript.id];
+        const connectionPoints = scriptConnectionPoints[currentScript.id];
         for (const connectionPoint of connectionPoints)
         {
             // Get the connection point information (script and input/output information)
-            let connectionPointLanguageBlock = await extractLanguageText(plugin.app, connectionPoint, canvasBlockConnectionPointLanguageName);
+            const connectionPointLanguageBlock = await extractLanguageText(plugin.app, connectionPoint, canvasBlockConnectionPointLanguageName);
             if(connectionPointLanguageBlock === null) continue;
-			let connectionPointData: ConnectionPointData = JSON.parse(connectionPointLanguageBlock);
+			const connectionPointData: ConnectionPointData = JSON.parse(connectionPointLanguageBlock);
 
             // Get the relevant information from the script about this connection
-            let ioConnection = scriptSettings.ioConnections[connectionPointData.name];
+            const ioConnection = scriptSettings.ioConnections[connectionPointData.name];
             if(ioConnection === undefined) continue;
 
             // Ignore all output connnections as only the inputs are needed to trace back the path of scripts
             if(ioConnection.direction === "output") continue;
 
             // Get the edges that connect the input connection node to the data / output connection node of another script
-            let connectionEdge = edges.find(edge => edge.toNode === connectionPoint.id);
+            const connectionEdge = edges.find(edge => edge.toNode === connectionPoint.id);
             if(connectionEdge === undefined) continue;
 
-            let otherConnectionID = connectionEdge.fromNode;
+            const otherConnectionID = connectionEdge.fromNode;
             if(otherConnectionID === undefined) continue;
             
             // Get the node attached to this edge
-            let otherConnectionPoint = nodes.find(node => node.id === otherConnectionID);
+            const otherConnectionPoint = nodes.find(node => node.id === otherConnectionID);
             if(otherConnectionPoint === undefined) continue;
 
             // Try to get the connection data
-            let otherConnectionPointLanguageBlock = await extractLanguageText(plugin.app, otherConnectionPoint, canvasBlockConnectionPointLanguageName);
+            const otherConnectionPointLanguageBlock = await extractLanguageText(plugin.app, otherConnectionPoint, canvasBlockConnectionPointLanguageName);
             
             // If it is not a connection, process the node as a file/text node
             if(otherConnectionPointLanguageBlock === null)
             {
                 // Immediately add the node data as there is no script to process first
-                let flowName = `${otherConnectionID}_NODE}`;
+                const flowName = `${otherConnectionID}_NODE}`;
                 dataFlow[`${currentScript.id}_${connectionPointData.name}`] = flowName
 
                 switch (ioConnection.type) {
                     case "text":
                     case "integer":
                     case "float":
-                        let text: string|null = await getNodeText(plugin.app, otherConnectionPoint);
+                    {
+                        const text: string|null = await getNodeText(plugin.app, otherConnectionPoint);
                         if (text === null)
                         {
                             new Notice(`Failed to load node as text`);
@@ -155,25 +159,27 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                         }
                         executionData[flowName] = text;
                         break;
-
+                    }
 
                     case "image":
+                    {
                         if (otherConnectionPoint.type !== "file"){
-                            new Notice("Attempted to load a non-image node (${otherConnectionPoint.file}) as an image");
+                         new Notice("Attempted to load a non-image node (${otherConnectionPoint.file}) as an image");
                             return;
                         }
 
-                        let file: TAbstractFile|null = plugin.app.vault.getAbstractFileByPath(otherConnectionPoint.file);
+                        const file: TAbstractFile|null = plugin.app.vault.getAbstractFileByPath(otherConnectionPoint.file);
                         if (file === null || !(file instanceof TFile)) {
                             new Notice(`Attempt to load image ${otherConnectionPoint.file} failed`);
                             return;
-                        };
+                        }
 
-                        let image = await plugin.app.vault.readBinary(file);
-                        let base64Image = Buffer.from(image).toString('base64');
+                        const image = await plugin.app.vault.readBinary(file);
+                        const base64Image = Buffer.from(image).toString('base64');
                         executionData[flowName] = base64Image;
 
                         break;
+                    }
 
                     case "file":
                     case "any":
@@ -185,10 +191,10 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                 continue;
             }
 
-			let otherConnectionPointData: ConnectionPointData = JSON.parse(otherConnectionPointLanguageBlock);
+			const otherConnectionPointData: ConnectionPointData = JSON.parse(otherConnectionPointLanguageBlock);
 
 
-            let otherScript = nodes.find(node => node.id === otherConnectionPointData.scriptID);
+            const otherScript = nodes.find(node => node.id === otherConnectionPointData.scriptID);
             if(otherScript === undefined) continue;
 
             if (!searchQueue.includes(otherScript)) {
@@ -201,49 +207,48 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
 
     while(executeStack.length > 0)
     {
-        let currentScript = executeStack.pop();
+        const currentScript = executeStack.pop();
         if(currentScript === undefined) continue;
 
-        let sucess = await executeScript(plugin, canvas, currentScript, dataFlow, executionData);
+        const sucess = await executeScript(plugin, canvas, currentScript, dataFlow, executionData);
         if(!sucess) {
             new Notice("Workflow execution stopped because a script failed");
             break;
-        };
+        }
 
     }
 }
 
-
 async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptNode: AllCanvasNodeData, dataFlow: { [key: string]: string }, executionData: { [key: string]: string }): Promise<boolean>
 {
-    let scriptLanguageBlock = await extractLanguageText(plugin.app, scriptNode, pythonCodeBlockLanguageName);
+    const scriptLanguageBlock = await extractLanguageText(plugin.app, scriptNode, pythonCodeBlockLanguageName);
     if(scriptLanguageBlock === null) return false;
 
-    let settingsLanguageBlock = await extractLanguageText(plugin.app, scriptNode, canvasBlockSettingsLanguageName);
+    const settingsLanguageBlock = await extractLanguageText(plugin.app, scriptNode, canvasBlockSettingsLanguageName);
     if(settingsLanguageBlock === null) return false;
 
-    let scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
+    const scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
 
-    let inputData: { [key: string]: string } = {};
-    let outputData: { [key: string]: any } = {};
+    const inputData: { [key: string]: string } = {};
+    const outputData: { [key: string]: null } = {};
 
     for (const connectionName in scriptSettings.ioConnections)
     {
-        let ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
+        const ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
         if (ioConnection.direction === "output") 
         {
             outputData[connectionName] = null;
             continue;
         }
 
-        let flow = dataFlow[`${scriptNode.id}_${connectionName}`];
-        let data = executionData[flow];
+        const flow = dataFlow[`${scriptNode.id}_${connectionName}`];
+        const data = executionData[flow];
 
         inputData[connectionName] = data
     }
 
-    let adapter : ExtendedDataAdapter = plugin.app.vault.adapter;
-    let injectionData = {
+    const adapter : ExtendedDataAdapter = plugin.app.vault.adapter;
+    const injectionData = {
         execution_type: 'workflow',
         in_data: inputData,
         out_data: outputData,
@@ -253,14 +258,15 @@ async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas,
         plugin_folder: plugin.getDataFolder(),
     };
 
-    let messageHandler = async (canvas: ExtendedCanvas, message: any) => {
-        let response = await defaultMessageHandler(canvas, message)
+
+    const messageHandler = async (canvas: ExtendedCanvas, message: BaseMessage): Promise<BaseMessage|null|undefined> => {
+        const response = await defaultMessageHandler(canvas, message)
         if(response === null) return;
 
-        let commandType = message.command;
+        const commandType = message.command;
         if(commandType === "RETURN_OUTPUT")
         {
-            let outData = message.data;
+            const outData = message.data;
             for (const key in outData) {
                 if (outData.hasOwnProperty(key)) {
                     executionData[`${scriptNode.id}_${key}`] = outData[key];
@@ -269,40 +275,35 @@ async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas,
         }
     }
 
-    let sucess = await executePythonString(plugin, canvas, scriptLanguageBlock + "\n\n#Generated by plugin\n_return_output_data()", injectionData, messageHandler)
+    const sucess = await executePythonString(plugin, canvas, scriptLanguageBlock + "\n\n#Generated by plugin\n_return_output_data()", injectionData, messageHandler)
     return sucess;
 }
 
-
-function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: TFile) {
-	let view: CanvasView | null = this.app.workspace.getActiveViewOfType(ItemView);
+	const view: CanvasView | null = this.app.workspace.getActiveViewOfType(ItemView);
 	if (view === null) return;
 	if (!view.hasOwnProperty('canvas')) {
 		new Notice("A canvas must be open to run this command");
 		return;
 	}
 
-	let canvas: ExtendedCanvas = view.canvas;
-	let scriptText: string = await app.vault.read(scriptFile);
+	const canvas: ExtendedCanvas = view.canvas;
+	const scriptText: string = await app.vault.read(scriptFile);
 
-    let text = await extractLanguageText(plugin.app, scriptText, canvasBlockSettingsLanguageName);
+    const text = await extractLanguageText(plugin.app, scriptText, canvasBlockSettingsLanguageName);
     if (text === null) return;
-    let scriptSettings: CanvasBlockSetting = JSON.parse(text);
+    const scriptSettings: CanvasBlockSetting = JSON.parse(text);
 
-    let padding = 20;
-    let scriptWidth = 400;
-    let scriptHeight = 60;
-    let connectionPointWidth = 180;
-    let connectionPointHeight = 50;
+    const padding = 20;
+    const scriptWidth = 400;
+    const scriptHeight = 60;
+    const connectionPointWidth = 180;
+    const connectionPointHeight = 50;
 
-    let tx = canvas.tx;
-    let ty = canvas.ty;
+    const tx = canvas.tx;
+    const ty = canvas.ty;
 
-    let scriptNode: CanvasFileData = canvas.createFileNode({
+    const scriptNode: CanvasFileData = canvas.createFileNode({
         file: scriptFile,
         pos: {
             x: tx,
@@ -320,15 +321,15 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
     let numInput = 0;
     let numOutput = 0;
 
-    let connectionNodes: CanvasTextData[] = [];
+    const connectionNodes: CanvasTextData[] = [];
     for (const connectionName in scriptSettings.ioConnections)
     {
-        let ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
+        const ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
 
-        let numberOfConnectionsAbove: number = ioConnection.direction === "input" ? numInput : numOutput;
-        let offset: number = ioConnection.direction === "input" ? 0 : scriptWidth - connectionPointWidth;
+        const numberOfConnectionsAbove: number = ioConnection.direction === "input" ? numInput : numOutput;
+        const offset: number = ioConnection.direction === "input" ? 0 : scriptWidth - connectionPointWidth;
 
-        let connectionNode = canvas.createTextNode({
+        const connectionNode = canvas.createTextNode({
             text: `\`\`\`${canvasBlockConnectionPointLanguageName}
 {
     "name": "${connectionName}",

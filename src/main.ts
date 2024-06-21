@@ -1,5 +1,5 @@
 import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, normalizePath, FuzzySuggestModal, Vault, TFolder } from "obsidian";
-import { CanvasNodeData, CanvasTextData, CanvasFileData, AllCanvasNodeData } from "obsidian/canvas";
+import { AllCanvasNodeData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
 import { handleWorkflowFromGroup, refreshNode } from "./workflow";
@@ -7,26 +7,26 @@ import { executePythonString } from "./pythonexecution";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge } from "./canvasdefinitions";
 
-
 export interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
 }
 
 export function boundingBoxFromNode(node: AllCanvasNodeData): BoundingBox
 {
-	let bbox: BoundingBox = { minX: node.x, minY: node.y, maxX: node.x+node.width, maxY: node.y+node.height };
+	const bbox: BoundingBox = { minX: node.x, minY: node.y, maxX: node.x+node.width, maxY: node.y+node.height };
 	return bbox
 }
 
+// eslint-disable-next-line no-unused-vars
 export async function canvasClosestNodeToPosition(canvas: ExtendedCanvas, x: number, y: number, filterInvalidFunction: (node: AllCanvasNodeData) => boolean | Promise<boolean> = () => false) : Promise<string|null> {
     let closest: string|null = null;
-    let nodes: any[] = canvas.data.nodes;
+    const nodes: AllCanvasNodeData[] = canvas.data.nodes;
     let closestDistanceSquared = 1e10;
 
     for (const node of nodes) {
         if (await filterInvalidFunction(node)) continue;
 
-        let distanceSquared = (node.x - x) ** 2 + (node.y - y) ** 2;
+        const distanceSquared = (node.x - x) ** 2 + (node.y - y) ** 2;
 
         if(distanceSquared < closestDistanceSquared)
         {
@@ -39,9 +39,10 @@ export async function canvasClosestNodeToPosition(canvas: ExtendedCanvas, x: num
 }
 
 
+// eslint-disable-next-line no-unused-vars
 export async function canvasClosestNodeToPositionInBounds(canvas: ExtendedCanvas, boundingBox: BoundingBox, filterInvalidFunction: (node: AllCanvasNodeData) => boolean | Promise<boolean> = () => false) : Promise<string|null> {
     let closest: string|null = null;
-    let nodes: any[] = canvas.data.nodes;
+    const nodes: AllCanvasNodeData[] = canvas.data.nodes;
     let closestDistanceSquared = 1e10;
 
     for (const node of nodes) {
@@ -67,9 +68,10 @@ export async function canvasClosestNodeToPositionInBounds(canvas: ExtendedCanvas
     return closest;
 }
 
+// eslint-disable-next-line no-unused-vars
 export async function canvasNodesInBounds(canvas: ExtendedCanvas, boundingBox: BoundingBox, filterInvalidFunction: (node: AllCanvasNodeData) => boolean | Promise<boolean> = () => false): Promise<string[]> {
     const nodesInBounds: string[] = [];
-    const nodes: any[] = canvas.data.nodes;
+    const nodes: AllCanvasNodeData[] = canvas.data.nodes;
 
     for (const node of nodes) {
         const { minX: x1_min, minY: y1_min, maxX: x1_max, maxY: y1_max } = boundingBox;
@@ -129,8 +131,8 @@ export async function getNodeText(app: App, node: AllCanvasNodeData): Promise<st
 
 	else if(node.type === "file" && node.file.endsWith("md"))
 	{
-		let filePath: string = node.file;
-		let file: TAbstractFile|null = app.vault.getAbstractFileByPath(filePath);
+		const filePath: string = node.file;
+		const file: TAbstractFile|null = app.vault.getAbstractFileByPath(filePath);
 
 		if(file === null) return null
 		if(!(file instanceof TFile)) return null;
@@ -148,13 +150,13 @@ export async function extractLanguageText(app: App, source: AllCanvasNodeData|st
 	if(typeof source === 'string')
 		text = source
 	else{
-		let returnedText = await getNodeText(app, source);
+		const returnedText = await getNodeText(app, source);
 		if(returnedText === null) return null;
 		text = returnedText;
 	}
 
 	const languageRegex = new RegExp("```\\s*" + language + "\\s*([\\s\\S]*?)```");
-    let match = languageRegex.exec(text);
+    const match = languageRegex.exec(text);
 
     // Return the text inside the first match or null if no match is found
     return match ? match[1] : null;
@@ -162,7 +164,7 @@ export async function extractLanguageText(app: App, source: AllCanvasNodeData|st
 
 export async function checkContainsLanguage(app: App, node: AllCanvasNodeData, language: string): Promise<boolean>
 {
-	let text: string|null = await getNodeText(app, node);
+	const text: string|null = await getNodeText(app, node);
 	if(text === null) return false;
 	
 	const languageRegex = new RegExp("```\\s*" + language + "\\s*([\\s\\S]*?)```");
@@ -184,7 +186,7 @@ class FuzzyScriptSuggester extends FuzzySuggestModal<TFile>
 	getItems(): TFile[] {
 		const files: TFile[] = [];
 
-		let folder = app.vault.getAbstractFileByPath(normalizePath(this.plugin.settings.workflowScriptFolder));
+		const folder = app.vault.getAbstractFileByPath(normalizePath(this.plugin.settings.workflowScriptFolder));
 		if(folder === null) return [];
 		if (!(folder instanceof TFolder)) return [];
 
@@ -192,13 +194,13 @@ class FuzzyScriptSuggester extends FuzzySuggestModal<TFile>
 			if (file instanceof TFile) {
 				files.push(file);
 			}
-    	});
+		});
 		return files;
 	}
 	getItemText(item: TFile): string {
 		return item.basename;
 	}
-	onChooseItem(item: TFile, evt: MouseEvent | KeyboardEvent): void {
+	onChooseItem(item: TFile): void {
 		addWorkflowScript(this.plugin, item);
 	}
 	
@@ -251,16 +253,17 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		this.registerEvent(this.app.workspace.on('layout-change', () =>
 		{
-			let view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
 			if(view === null) return;
 			if(!view.hasOwnProperty('canvas')) {
 				return;
 			}
 			
-			let canvas: ExtendedCanvas = view.canvas;
+			const canvas: ExtendedCanvas = view.canvas;
 
 			const originalAddEdge = canvas.addEdge;
 			canvas.addEdge = async function(edge: ExtendedEdge) {
+				
 				originalAddEdge.call(this, edge);
 				edge.lastTo = edge.to.node.id;
 
@@ -269,14 +272,15 @@ export default class CanvasBlocksPlugin extends Plugin {
 				refreshNode(canvas, edge.from.node.id);
 
 				const originalEdgeUpdate = edge.update;
-				edge.update = async function(...args: any) {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				edge.update = async function(...args: any[]) {
 					originalEdgeUpdate.apply(this, args);
 
 					// Check if the edge is pointing to a different node
 					if (edge.lastTo !== edge.to.node.id)
 					{
 						// Set new last pointing to node
-						let lastTo = edge.lastTo;
+						const lastTo = edge.lastTo;
 						edge.lastTo = edge.to.node.id;
 						
 						// Save to refresh canvas.edges dictionary
@@ -289,6 +293,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 			};
 
 			const originalRemoveEdge = canvas.removeEdge;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			canvas.removeEdge = async function(...args: any) {
 				
 				originalRemoveEdge.apply(this, args);
@@ -309,33 +314,33 @@ export default class CanvasBlocksPlugin extends Plugin {
 		this.registerMarkdownCodeBlockProcessor(canvasBlockSettingsLanguageName, () => {});
 
 		// Render script connections
-		this.registerMarkdownCodeBlockProcessor(canvasBlockConnectionPointLanguageName, async (source, el, ctx) =>
+		this.registerMarkdownCodeBlockProcessor(canvasBlockConnectionPointLanguageName, async (source, el) =>
 		{
-			let connectionPointData: ConnectionPointData = JSON.parse(source);
+			const connectionPointData: ConnectionPointData = JSON.parse(source);
 
-			let view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
 			if(view === null) return;
 			if(!view.hasOwnProperty('canvas')) {
 				return;
 			}
 			
-			let canvas: ExtendedCanvas = view.canvas;
+			const canvas: ExtendedCanvas = view.canvas;
 			//let scriptNode = canvas.nodes.get(connectionPointData.scriptID);
-			let scriptNode = canvas.data.nodes.find(node => node.id === connectionPointData.scriptID);
+			const scriptNode = canvas.data.nodes.find(node => node.id === connectionPointData.scriptID);
 			if (scriptNode === undefined) return;
-			let scriptData: string|null = await extractLanguageText(this.app, scriptNode, canvasBlockSettingsLanguageName);
+			const scriptData: string|null = await extractLanguageText(this.app, scriptNode, canvasBlockSettingsLanguageName);
 
 			if(scriptData === null) return;
 			
-			let scriptSettings: CanvasBlockSetting = JSON.parse(scriptData);
+			const scriptSettings: CanvasBlockSetting = JSON.parse(scriptData);
 
-			let ioConnection: IOConnection|undefined = scriptSettings.ioConnections[connectionPointData.name];
+			const ioConnection: IOConnection|undefined = scriptSettings.ioConnections[connectionPointData.name];
 			if(ioConnection === undefined) return;
 			
-			let connectionNode = canvas.data.nodes.find(node => node.type === "text" && node.text.includes(source));
+			const connectionNode = canvas.data.nodes.find(node => node.type === "text" && node.text.includes(source));
 			if(connectionNode === undefined) return;
 
-			let connectionEdge = canvas.data.edges.find(edge => edge.toNode === connectionNode!.id || edge.fromNode === connectionNode!.id)
+			const connectionEdge = canvas.data.edges.find(edge => edge.toNode === connectionNode.id || edge.fromNode === connectionNode.id)
 
 			let circle: string;
 			if (connectionEdge === undefined)
@@ -355,10 +360,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 					break;
 
 				case "integer":
-					color = "#06aacf"
+					color = "#06aacf";
+					break;
 
 				case "float":
-					color = "#13d493"
+					color = "#13d493";
+					break;
 
 				case "file":
 					color = "#55FF55";
@@ -373,18 +380,18 @@ export default class CanvasBlocksPlugin extends Plugin {
 					break;
 			}
 
-			let circleSpan: HTMLSpanElement = createSpan({ text: circle });
+			const circleSpan: HTMLSpanElement = createSpan({ text: circle });
 			circleSpan.setCssStyles({ color: color });
 
 			if(ioConnection.direction === "input")
 			{
-				let span = el.createSpan({ cls: "canvasblock-input-node" });
+				const span = el.createSpan({ cls: "canvasblock-input-node" });
 				span.appendChild(circleSpan);
 				span.appendText(" " + connectionPointData.name);
 			}
 			else
 			{
-				let span = el.createSpan({ cls: "canvasblock-output-node" });
+				const span = el.createSpan({ cls: "canvasblock-output-node" });
 				span.appendText(connectionPointData.name + " ");
 				span.appendChild(circleSpan);
 			}
@@ -409,7 +416,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 	// Returns folder name with leading and trailing '/'
 	getDataFolder()
 	{
-		let folder = this.settings.dataFolder;
+		const folder = this.settings.dataFolder;
 
 		if (folder === "/") return "";
 
@@ -418,33 +425,33 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 	async handleRun()
 	{
-		let view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+		const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
 		if(view === null) return;
 		if(!view.hasOwnProperty('canvas')) {
 			new Notice('This command requires a canvas file to be open');
 			return;
 		}
 
-		let canvas: ExtendedCanvas = view.canvas;
+		const canvas: ExtendedCanvas = view.canvas;
 
-		let selected = canvas.selection;
+		const selected = canvas.selection;
 		if (selected.size === 0) {
 			new Notice('This command requires a node to be selected');
 			return;
 		}
 
 		// Gets the DOM object and ID
-		let selectedNode = selected.values().next().value;
-		let selectionID = selectedNode.id;
+		const selectedNode = selected.values().next().value;
+		const selectionID = selectedNode.id;
 
-		let selectedData: AllCanvasNodeData = this.getNodeByID(canvas, selectionID);
+		const selectedData: AllCanvasNodeData = this.getNodeByID(canvas, selectionID);
 		if (selectedData.type === "group")
 		{
 			handleWorkflowFromGroup(this, canvas, selectedData);
 			return;
 		}
 
-		let closestID : string|null = await canvasClosestNodeToPositionInBounds(canvas, selectedNode.bbox, 
+		const closestID : string|null = await canvasClosestNodeToPositionInBounds(canvas, selectedNode.bbox, 
 			(node: AllCanvasNodeData) => { return node.id === selectionID });
 
 		this.handleCommand(canvas, selectionID, closestID);
@@ -460,8 +467,8 @@ export default class CanvasBlocksPlugin extends Plugin {
 		// If selected and other are both scripts, use selected as the script
 		// If neither are scripts, return
 		// Otherwise, use the valid script as a script
-		let selectedData = this.getNodeByID(canvas, selectedID);
-		let selectedIsValidScript = await checkContainsLanguage(this.app, selectedData, pythonCodeBlockLanguageName);
+		const selectedData = this.getNodeByID(canvas, selectedID);
+		const selectedIsValidScript = await checkContainsLanguage(this.app, selectedData, pythonCodeBlockLanguageName);
 
 		if (!selectedIsValidScript && otherID === null) { 
 			new Notice('No valid scripts are selected');
@@ -478,14 +485,15 @@ export default class CanvasBlocksPlugin extends Plugin {
 		}
 		else
 		{
-			let otherData = this.getNodeByID(canvas, otherID!);
-			let otherIsValidScript = await checkContainsLanguage(this.app, otherData, pythonCodeBlockLanguageName);
+			if(otherID === null) return;
+			const otherData = this.getNodeByID(canvas, otherID);
+			const otherIsValidScript = await checkContainsLanguage(this.app, otherData, pythonCodeBlockLanguageName);
 			if (!otherIsValidScript) {
 				new Notice('No valid scripts are selected');
 				return;
 			}
 			
-			scriptID = otherID!;
+			scriptID = otherID;
 			parameterID = selectedID;
 		}
 
@@ -493,24 +501,23 @@ export default class CanvasBlocksPlugin extends Plugin {
 		let parameterData = {};
 		if (parameterID !== null)
 			parameterData = this.getNodeByID(canvas, parameterID);
-		let scriptData = this.getNodeByID(canvas, scriptID);
-
+		const scriptData = this.getNodeByID(canvas, scriptID);
 
 		// Finds all edges that point into the script node
-		let arrowParamterEdges = canvas.data!.edges.filter(edge => edge.toNode === scriptID);
+		const arrowParamterEdges = canvas.data.edges.filter(edge => edge.toNode === scriptID);
 
 		// Gets the IDs of nodes pointing to the script node
-		let arrowParameterIDs = arrowParamterEdges.map(edge => edge.fromNode);
+		const arrowParameterIDs = arrowParamterEdges.map(edge => edge.fromNode);
 
 		// Finds the nodes from the IDs
-		let arrowParameters = canvas.data.nodes.filter((node) => arrowParameterIDs.includes(node.id));
+		const arrowParameters = canvas.data.nodes.filter((node) => arrowParameterIDs.includes(node.id));
 
 		// Gets the string within the ```pycanvasblock ``` to run as code
-		let scriptCode = await extractLanguageText(this.app, scriptData, pythonCodeBlockLanguageName);
+		const scriptCode = await extractLanguageText(this.app, scriptData, pythonCodeBlockLanguageName);
 		if (scriptCode === null) return;
 
 		
-		let adapter : ExtendedDataAdapter = this.app.vault.adapter;
+		const adapter : ExtendedDataAdapter = this.app.vault.adapter;
 
 		const injectionData = {
 			execution_type: 'simple',
