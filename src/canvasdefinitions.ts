@@ -6,6 +6,13 @@ import { CanvasData, CanvasFileData, CanvasGroupData, CanvasTextData } from "obs
 export interface CanvasView extends ItemView {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     canvas?: any;
+	_loaded: boolean;
+
+	// Added by the plugin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalAddEdge: undefined|((...args: any[]) => any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalRemoveNode: undefined|((...args: any[]) => any);
 }
 
 export interface CanvasLeaf extends WorkspaceLeaf {
@@ -42,6 +49,8 @@ export interface ExtendedCanvas {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	removeEdge: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	removeNode: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	addEdge: any;
     ty: number;
     tx: number;
@@ -72,4 +81,8 @@ export interface ExtendedEdge {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	update: any;
 
+
+	// Added by the plugin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalEdgeUpdate: undefined|((...args: any[]) => any);
 }

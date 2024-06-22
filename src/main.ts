@@ -2,7 +2,7 @@ import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, norma
 import { AllCanvasNodeData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
-import { handleWorkflowFromGroup, refreshNode } from "./workflow";
+import { getWorkflowNodes, handleWorkflowFromGroup, refreshNode } from "./workflow";
 import { executePythonString } from "./pythonexecution";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge } from "./canvasdefinitions";
@@ -88,7 +88,7 @@ export async function canvasNodesInBounds(canvas: ExtendedCanvas, boundingBox: B
 
 
 
-interface BoundingBox {
+export interface BoundingBox {
     minX: number;
     minY: number;
     maxX: number;
@@ -128,6 +128,13 @@ export async function getNodeText(app: App, node: AllCanvasNodeData): Promise<st
 
 	else if (node.type === "link") 
 		text = node.url;
+
+	else if (node.type === "group")
+	{
+		if (node.label !== undefined)
+			text = node.label;
+		else return null;
+	}
 
 	else if(node.type === "file" && node.file.endsWith("md"))
 	{
@@ -226,6 +233,7 @@ export const canvasBlockConnectionPointLanguageName = "canvasblockconnectionpoin
 
 export default class CanvasBlocksPlugin extends Plugin {
 	settings: CanvasBlocksPluginSettings;
+	plugin: CanvasBlocksPlugin = this;
 
 	async onload() {
 		//registerEvents(this);
@@ -253,28 +261,35 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		this.registerEvent(this.app.workspace.on('layout-change', () =>
 		{
-			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
 			if(view === null) return;
 			if(!view.hasOwnProperty('canvas')) {
 				return;
 			}
-			
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const viewFilePath: string = (view as any).file.path;
 			const canvas: ExtendedCanvas = view.canvas;
+
+			if(view.originalAddEdge) canvas.addEdge = view.originalAddEdge;
+			if(view.originalRemoveNode) canvas.removeNode = view.originalRemoveNode;
 
 			const originalAddEdge = canvas.addEdge;
 			canvas.addEdge = async function(edge: ExtendedEdge) {
 				
-				originalAddEdge.call(this, edge);
+				originalAddEdge.call(canvas, edge);
 				edge.lastTo = edge.to.node.id;
 
 				// Save to refresh canvas.edges dictionary
 				canvas.requestSave();
 				refreshNode(canvas, edge.from.node.id);
 
-				const originalEdgeUpdate = edge.update;
+				if(edge.originalEdgeUpdate) edge.update = edge.originalEdgeUpdate;
+				edge.originalEdgeUpdate = edge.update;
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				edge.update = async function(...args: any[]) {
-					originalEdgeUpdate.apply(this, args);
+					if(!edge.originalEdgeUpdate) return;
+					edge.originalEdgeUpdate.apply(this, args);
 
 					// Check if the edge is pointing to a different node
 					if (edge.lastTo !== edge.to.node.id)
@@ -294,7 +309,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 			const originalRemoveEdge = canvas.removeEdge;
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			canvas.removeEdge = async function(...args: any) {
+			canvas.removeEdge = async function(...args: any[]) {
 				
 				originalRemoveEdge.apply(this, args);
 
@@ -304,7 +319,45 @@ export default class CanvasBlocksPlugin extends Plugin {
 				// Refresh the both connections of the edge
 				refreshNode(canvas, args[0].from.node.id);
 				refreshNode(canvas, args[0].to.node.id);
+			};
+
+
+		view.originalRemoveNode = canvas.removeNode;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		canvas.removeNode = async function(deletedNode: any) {
+
+			if(!view.originalRemoveNode) return;
+
+			// Save to refresh canvas.edges dictionary
+			canvas.requestSave();
+
+			const isViewLoaded: boolean = view._loaded;
+			if(!isViewLoaded) {view.originalRemoveNode.call(canvas, deletedNode); return;}
+
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const newViewFilePath: string = (view as any).file.path;
+			if (viewFilePath != newViewFilePath) {view .originalRemoveNode.call(canvas, deletedNode); return;}
+
+			const workflowNodes = await getWorkflowNodes(this, view, canvas, deletedNode.id);
+			if (workflowNodes === undefined) 
+			{
+				view.originalRemoveNode.call(canvas, deletedNode);
+				canvas.requestSave(); 
+				return;
 			}
+
+			view.originalRemoveNode.call(canvas, canvas.nodes.get(workflowNodes.settingsNode.id));
+			if (workflowNodes.groupNode !== undefined)
+				view.originalRemoveNode.call(canvas, canvas.nodes.get(workflowNodes.groupNode.id));
+
+			for (const node of workflowNodes.connectionNodes)
+			{
+				view.originalRemoveNode.call(canvas, canvas.nodes.get(node.id));
+			}
+
+			canvas.requestSave();
+		};
+
 			
 		}));
 
@@ -318,14 +371,13 @@ export default class CanvasBlocksPlugin extends Plugin {
 		{
 			const connectionPointData: ConnectionPointData = JSON.parse(source);
 
-			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
 			if(view === null) return;
 			if(!view.hasOwnProperty('canvas')) {
 				return;
 			}
 			
 			const canvas: ExtendedCanvas = view.canvas;
-			//let scriptNode = canvas.nodes.get(connectionPointData.scriptID);
 			const scriptNode = canvas.data.nodes.find(node => node.id === connectionPointData.scriptID);
 			if (scriptNode === undefined) return;
 			const scriptData: string|null = await extractLanguageText(this.app, scriptNode, canvasBlockSettingsLanguageName);
@@ -425,7 +477,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 	async handleRun()
 	{
-		const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView);
+		const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
 		if(view === null) return;
 		if(!view.hasOwnProperty('canvas')) {
 			new Notice('This command requires a canvas file to be open');

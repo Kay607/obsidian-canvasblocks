@@ -1,4 +1,4 @@
-import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, pythonCodeBlockLanguageName, canvasBlockSettingsLanguageName, canvasBlockConnectionPointLanguageName, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter, getNodeText } from "./main";
+import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, pythonCodeBlockLanguageName, canvasBlockSettingsLanguageName, canvasBlockConnectionPointLanguageName, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter, getNodeText, BoundingBox } from "./main";
 import { CanvasView, ExtendedCanvas } from "./canvasdefinitions";
 import { BaseMessage, defaultMessageHandler, executePythonString } from "./pythonexecution";
 
@@ -39,6 +39,123 @@ export function refreshNode(canvas: ExtendedCanvas, id: string)
     
 
     waitForRenderQueue(); // Start waiting for the render queue to be null
+}
+
+
+export interface WorkflowNodes
+{
+    settingsNode: AllCanvasNodeData;
+    connectionNodes: AllCanvasNodeData[];
+    groupNode: AllCanvasNodeData|undefined;
+}
+
+export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, view: CanvasView, canvas: ExtendedCanvas, selectedNodeID: string): Promise<WorkflowNodes|undefined> {
+    const selectedNode = canvas.nodes.get(selectedNodeID);
+    if(selectedNode === undefined) return;
+
+    const selectedNodeData: AllCanvasNodeData|undefined = canvas.data.nodes.find(node => node.id === selectedNode.id);
+    if(selectedNodeData === undefined) return;
+
+    // Check if the node contains a code block of language canvasBlockSettingsLanguageName
+    const isSettingsNode: boolean = await checkContainsLanguage(plugin.app, selectedNodeData, canvasBlockSettingsLanguageName)
+    let settingsNodeID = selectedNodeData.id;
+
+    if(!isSettingsNode){
+        // If it is a text node, check if it is a connection point
+        if(selectedNodeData.type === "text"){
+            const languageText = await extractLanguageText(plugin.app, selectedNodeData, canvasBlockConnectionPointLanguageName);
+            if(languageText === null) return;
+            const connectionPointData: ConnectionPointData = JSON.parse(languageText);
+            settingsNodeID = connectionPointData.scriptID;
+        }
+        // If it is a group node, check if there is a settings node within its bounds
+        else if(selectedNodeData.type === "group")
+        {
+            console.log(selectedNode.label);
+            if (selectedNodeData.label !== "\u200E") return;
+            
+            const possibleMainNodeID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedNode), async (testNode: AllCanvasNodeData) => {
+                const hasCode = await checkContainsLanguage(plugin.app, testNode, canvasBlockSettingsLanguageName);
+                return !hasCode;
+            });
+
+            if(possibleMainNodeID === null) return;
+            settingsNodeID = possibleMainNodeID;
+        }
+        else return;
+    }
+
+    // Get the settings node
+    const settingsNode = canvas.data.nodes.find(node => node.id === settingsNodeID);
+    if(settingsNode === undefined) return;
+
+    // Get all connection nodes that are connected to the settings node
+    const connectionNodes: AllCanvasNodeData[] = [];
+    for (const node of canvas.data.nodes)
+    {
+        const text = await extractLanguageText(plugin.app, node, canvasBlockConnectionPointLanguageName);
+        if (text === null) continue;
+        const connectionPointData: ConnectionPointData = JSON.parse(text);
+
+        if (connectionPointData.scriptID === settingsNodeID)
+        {
+            connectionNodes.push(node);
+        }
+    }
+
+    // Get the smallest possible bounding box that contains the settings node and all connection nodes
+    let totalBoundingBox: BoundingBox|undefined = undefined;
+    for (const node of [...connectionNodes, settingsNode])
+    {
+        const nodeBoundingBox = boundingBoxFromNode(node);
+        if(totalBoundingBox === undefined) totalBoundingBox = nodeBoundingBox;
+        else
+        {
+            totalBoundingBox = {
+                minX: Math.min(nodeBoundingBox.minX, totalBoundingBox.minX),
+                minY: Math.min(nodeBoundingBox.minY, totalBoundingBox.minY),
+                maxX: Math.max(nodeBoundingBox.maxX, totalBoundingBox.maxX),
+                maxY: Math.max(nodeBoundingBox.maxY, totalBoundingBox.maxY),
+            };
+        }
+    }
+    if (totalBoundingBox === undefined) return;
+
+    // Get all groups which overlap and fully contain the bounding box
+    const groups: AllCanvasNodeData[] = [];
+    for (const node of canvas.data.nodes)
+    {
+        if (node.type !== "group") continue;
+        const nodeBoundingBox = boundingBoxFromNode(node);
+        if (nodeBoundingBox.minX <= totalBoundingBox.minX && nodeBoundingBox.maxX >= totalBoundingBox.maxX && nodeBoundingBox.minY <= totalBoundingBox.minY && nodeBoundingBox.maxY >= totalBoundingBox.maxY)
+        {
+            groups.push(node);
+        }
+    }
+
+    // Find the distance between each corner of the group bounding box and the smallest allowed bounding box
+    let minDistance = Infinity;
+    let closestGroup: AllCanvasNodeData|undefined = undefined;
+    for (const group of groups)
+    {
+        const groupBoundingBox = boundingBoxFromNode(group);
+
+        const minXDistance = Math.abs(groupBoundingBox.minX - totalBoundingBox.minX);
+        const minYDistance = Math.abs(groupBoundingBox.minY - totalBoundingBox.minY);
+        const maxXDistance = Math.abs(groupBoundingBox.maxX - totalBoundingBox.maxX);
+        const maxYDistance = Math.abs(groupBoundingBox.maxY - totalBoundingBox.maxY);
+
+        const sumDistance = minXDistance + minYDistance + maxXDistance + maxYDistance;
+
+        if (sumDistance < minDistance)
+        {
+            minDistance = sumDistance;
+            closestGroup = group;
+        }
+    }
+
+    return { settingsNode: settingsNode, connectionNodes: connectionNodes, groupNode: closestGroup };
+
 }
 
 export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedData: CanvasGroupData) { 
