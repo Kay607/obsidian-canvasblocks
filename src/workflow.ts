@@ -183,7 +183,13 @@ export async function cachedGetWorkflowNodes(plugin: CanvasBlocksPlugin, canvas:
     if(workflowNodes === undefined)
     {
         workflowNodesIDsCache.set(selectedNodeID, undefined);
-        return;
+        return undefined;
+    }
+
+    if(workflowNodes.groupNode === undefined)
+    {
+        // Return without caching to avoid timing issues causing the group to not be found
+        return workflowNodes;
     }
 
     workflowNodesCache.set(workflowNodes.settingsNode.id, workflowNodes);
