@@ -5,6 +5,7 @@ import { BaseMessage, defaultMessageHandler, executePythonString } from "./pytho
 import { TFile, ItemView, Notice, TAbstractFile } from "obsidian";
 import { AllCanvasNodeData, CanvasGroupData, CanvasEdgeData, CanvasFileData, CanvasTextData } from "obsidian/canvas";
 import { TimedCache } from "./cache";
+import { workflowNodesDimensions } from "./constants";
 
 
 
@@ -443,8 +444,8 @@ async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas,
     return sucess;
 }
 
-export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: TFile) {
-	const view: CanvasView | null = this.app.workspace.getActiveViewOfType(ItemView);
+export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: TFile, tx: number, ty: number) {
+	const view: CanvasView | null = plugin.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
 	if (view === null) return;
 	if (!view.hasOwnProperty('canvas')) {
 		new Notice("A canvas must be open to run this command");
@@ -458,15 +459,6 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
     if (text === null) return;
     const scriptSettings: CanvasBlockSetting = JSON.parse(text);
 
-    const padding = 20;
-    const scriptWidth = 400;
-    const scriptHeight = 60;
-    const connectionPointWidth = 180;
-    const connectionPointHeight = 50;
-
-    const tx = canvas.tx;
-    const ty = canvas.ty;
-
     const scriptNode: CanvasFileData = canvas.createFileNode({
         file: scriptFile,
         pos: {
@@ -474,8 +466,8 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
             y: ty,
         },
         size: {
-            width: scriptWidth,
-            height: 60
+            width: workflowNodesDimensions.scriptWidth,
+            height: workflowNodesDimensions.scriptHeight
         },
         save: false,
         focus: false,
@@ -491,7 +483,7 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
         const ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
 
         const numberOfConnectionsAbove: number = ioConnection.direction === "input" ? numInput : numOutput;
-        const offset: number = ioConnection.direction === "input" ? 0 : scriptWidth - connectionPointWidth;
+        const offset: number = ioConnection.direction === "input" ? 0 : workflowNodesDimensions.scriptWidth - workflowNodesDimensions.connectionPointWidth;
 
         const connectionNode = canvas.createTextNode({
             text: `\`\`\`${canvasBlockConnectionPointLanguageName}
@@ -502,11 +494,11 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
 \`\`\``,
             pos: {
                 x: tx + offset,
-                y: ty + scriptHeight + padding + connectionPointHeight * numberOfConnectionsAbove,
+                y: ty + workflowNodesDimensions.scriptHeight + workflowNodesDimensions.padding + workflowNodesDimensions.connectionPointHeight * numberOfConnectionsAbove,
             },
             size: {
-                width: connectionPointWidth,
-                height: connectionPointHeight
+                width: workflowNodesDimensions.connectionPointWidth,
+                height: workflowNodesDimensions.connectionPointHeight
             },
             save: false,
             focus: false,
@@ -521,12 +513,12 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
     canvas.createGroupNode({
         label: "\u200E",
         pos: {
-            x: tx-padding,
-            y: ty-padding,
+            x: tx-workflowNodesDimensions.padding,
+            y: ty-workflowNodesDimensions.padding,
         },
         size: {
-            width: scriptWidth + 2*padding,
-            height: padding + scriptHeight + padding + connectionPointHeight * Math.max(numInput, numOutput) + padding
+            width: workflowNodesDimensions.scriptWidth + 2*workflowNodesDimensions.padding,
+            height: workflowNodesDimensions.padding + workflowNodesDimensions.scriptHeight + workflowNodesDimensions.padding + workflowNodesDimensions.connectionPointHeight * Math.max(numInput, numOutput) + workflowNodesDimensions.padding
         },
         save: false,
         focus: false,

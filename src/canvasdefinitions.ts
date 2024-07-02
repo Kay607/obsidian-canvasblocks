@@ -56,6 +56,8 @@ export interface GroupNodeTemplate extends NodeTemplate {
 
 export interface ExtendedCanvas {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	config: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	updateSelection: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	menu: any;
@@ -106,6 +108,8 @@ export interface ExtendedEdge {
 }
 
 export interface ExtendedNode {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    file: any;
 	id: string;
 	
 	x: number;
@@ -116,9 +120,12 @@ export interface ExtendedNode {
 	
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	moveAndResize: any;
-
+    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
 	moveTo(position: Position): unknown;
+    
+	destroy(): undefined;
+	detach(): undefined;
 
 	// Added by the plugin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars

@@ -180,13 +180,18 @@ export async function extractLanguageText(app: App, source: AllCanvasNodeData|st
     return match ? match[1] : null;
 }
 
+function checkTextContainsLanguage(text: string, language: string): boolean
+{
+	const languageRegex = new RegExp("```\\s*" + language + "\\s*([\\s\\S]*?)```");
+	return languageRegex.test(text);
+}
+
 export async function checkContainsLanguage(app: App, node: AllCanvasNodeData, language: string): Promise<boolean>
 {
 	const text: string|null = await getNodeText(app, node);
 	if(text === null) return false;
 	
-	const languageRegex = new RegExp("```\\s*" + language + "\\s*([\\s\\S]*?)```");
-	return languageRegex.test(text);
+	return checkTextContainsLanguage(text, language);
 }
 
 
@@ -219,7 +224,18 @@ class FuzzyScriptSuggester extends FuzzySuggestModal<TFile>
 		return item.basename;
 	}
 	onChooseItem(item: TFile): void {
-		addWorkflowScript(this.plugin, item);
+		const view: CanvasView | null = this.plugin.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
+		if (view === null) return;
+		if (!view.hasOwnProperty('canvas')) {
+			new Notice("A canvas must be open to run this command");
+			return;
+		}
+
+		const canvas: ExtendedCanvas = view.canvas;
+		const tx = canvas.tx;
+		const ty = canvas.ty;
+
+		addWorkflowScript(this.plugin, item, tx, ty);
 	}
 	
 }
@@ -366,9 +382,42 @@ export default class CanvasBlocksPlugin extends Plugin {
 			canvas.addNode = async function(node: ExtendedNode) {
 				
 				if(!view.originalAddNode) return;
-				
+
 				if(!node.skipAddNode)
-					view.originalAddNode.call(this, node);
+				{
+					view.originalAddNode.call(canvas, node);
+				}
+				
+				const newNodeData = canvas.data.nodes.find(searchNode => searchNode.id === node.id);
+
+				// The node won't be found if it's a new node
+				if (newNodeData === undefined)
+				{
+					if(node.hasOwnProperty("file")
+						&& node.width === canvas.config.defaultFileNodeDimensions.width
+						&& node.height === canvas.config.defaultFileNodeDimensions.height)
+					{
+						if (node.file.path.endsWith(".md"))
+						{
+							const file = that.app.vault.getFileByPath(node.file.path);
+
+							if(file !== null)
+							{
+								const text: string = await that.app.vault.cachedRead(file);
+								const containsLanguage: boolean = checkTextContainsLanguage(text, canvasBlockSettingsLanguageName);
+
+								if(containsLanguage)
+								{
+									addWorkflowScript(that, file, node.x, node.y);
+									node.destroy();
+									node.detach();
+									canvas.removeNode(node);
+									canvas.requestSave();
+								}
+							}
+						}
+					}
+				}
 
 				
 				if(node.originalMoveAndResize === undefined)
@@ -644,7 +693,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		});
 
-		//this.registerEvent()
 	}
 
 	onunload() {}
