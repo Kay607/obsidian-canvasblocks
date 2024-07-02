@@ -129,6 +129,8 @@ Install from the Obsidian `Comunity Plugins` tab or [Canvas Blocks](https://obsi
 
 You can manually install by adding `Kay607/obsidian-canvasblocks` to [BRAT](https://github.com/TfTHacker/obsidian42-brat)
 
+After enabling the plugin, close and reopen all canvas files which use this script
+
 ## Contribution
 
 Feel free to create an [issue](https://github.com/Kay607/obsidian-canvasblocks/issues) or [pull request](https://github.com/Kay607/obsidian-canvasblocks/pulls)
