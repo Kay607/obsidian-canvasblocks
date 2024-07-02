@@ -1,5 +1,6 @@
 import { ItemView, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import { CanvasData, CanvasFileData, CanvasGroupData, CanvasTextData } from "obsidian/canvas";
+import { Position } from "./main";
 
 // any is ignored as the Obsidian Canvas does not have these types
 
@@ -11,8 +12,12 @@ export interface CanvasView extends ItemView {
 	// Added by the plugin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
     originalAddEdge: undefined|((...args: any[]) => any);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalAddNode: undefined|((...args: any[]) => any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
     originalRemoveNode: undefined|((...args: any[]) => any);
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalHandleSelectionDrag: undefined|((...args: any[]) => any);
 }
 
 export interface CanvasLeaf extends WorkspaceLeaf {
@@ -47,6 +52,8 @@ export interface GroupNodeTemplate extends NodeTemplate {
 
 export interface ExtendedCanvas {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	addNode: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	removeEdge: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	removeNode: any;
@@ -70,6 +77,9 @@ export interface ExtendedCanvas {
     // eslint-disable-next-line no-unused-vars
 	createGroupNode(node: GroupNodeTemplate): CanvasGroupData;
     requestSave(): undefined;
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    handleSelectionDrag(event: PointerEvent, t: any, dragNode: any): void;
 }
 
 export interface ExtendedEdge {
@@ -85,4 +95,27 @@ export interface ExtendedEdge {
 	// Added by the plugin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
     originalEdgeUpdate: undefined|((...args: any[]) => any);
+}
+
+export interface ExtendedNode {
+	id: string;
+	
+	x: number;
+	y: number;
+	
+	width: number;
+	height: number;
+	
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	moveAndResize: any;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+	moveTo(position: Position): unknown;
+
+	// Added by the plugin
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalMoveAndResize: undefined|((...args: any[]) => any);
+	skipAddNode: boolean|undefined;
+
+	preventRecursion: boolean;
 }

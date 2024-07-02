@@ -71,7 +71,6 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, view: CanvasV
         // If it is a group node, check if there is a settings node within its bounds
         else if(selectedNodeData.type === "group")
         {
-            console.log(selectedNode.label);
             if (selectedNodeData.label !== "\u200E") return;
             
             const possibleMainNodeID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedNode), async (testNode: AllCanvasNodeData) => {
