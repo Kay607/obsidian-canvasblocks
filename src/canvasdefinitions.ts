@@ -6,6 +6,8 @@ import { Position } from "./main";
 
 export interface CanvasView extends ItemView {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	menu: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     canvas?: any;
 	_loaded: boolean;
 
@@ -18,6 +20,8 @@ export interface CanvasView extends ItemView {
     originalRemoveNode: undefined|((...args: any[]) => any);
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
     originalHandleSelectionDrag: undefined|((...args: any[]) => any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+	originalMenuRender: undefined|((...args: any[]) => any);
 }
 
 export interface CanvasLeaf extends WorkspaceLeaf {
@@ -51,6 +55,10 @@ export interface GroupNodeTemplate extends NodeTemplate {
 }
 
 export interface ExtendedCanvas {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	updateSelection: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+	menu: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	addNode: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

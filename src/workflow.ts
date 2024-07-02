@@ -47,7 +47,7 @@ export interface WorkflowNodes
 {
     settingsNode: AllCanvasNodeData;
     connectionNodes: AllCanvasNodeData[];
-    groupNode: AllCanvasNodeData|undefined;
+    groupNode: CanvasGroupData|undefined;
 }
 
 export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedNodeID: string): Promise<WorkflowNodes|undefined> {
@@ -122,7 +122,7 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
     if (totalBoundingBox === undefined) return;
 
     // Get all groups which overlap and fully contain the bounding box
-    const groups: AllCanvasNodeData[] = [];
+    const groups: CanvasGroupData[] = [];
     for (const node of canvas.data.nodes)
     {
         if (node.type !== "group") continue;
@@ -135,7 +135,7 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
 
     // Find the distance between each corner of the group bounding box and the smallest allowed bounding box
     let minDistance = Infinity;
-    let closestGroup: AllCanvasNodeData|undefined = undefined;
+    let closestGroup: CanvasGroupData|undefined = undefined;
     for (const group of groups)
     {
         const groupBoundingBox = boundingBoxFromNode(group);
@@ -312,7 +312,7 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                         const text: string|null = await getNodeText(plugin.app, otherConnectionPoint);
                         if (text === null)
                         {
-                            new Notice(`Failed to load node as text`);
+                            new Notice("Failed to load node as text");
                             return;
                         }
                         executionData[flowName] = text;
@@ -322,7 +322,7 @@ async function executeWorkflow(plugin: CanvasBlocksPlugin, canvas: ExtendedCanva
                     case "image":
                     {
                         if (otherConnectionPoint.type !== "file"){
-                         new Notice("Attempted to load a non-image node (${otherConnectionPoint.file}) as an image");
+                         new Notice(`Attempted to load a non-image node (${otherConnectionPoint.file}) as an image`);
                             return;
                         }
 

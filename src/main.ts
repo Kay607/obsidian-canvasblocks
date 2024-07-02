@@ -1,4 +1,4 @@
-import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, normalizePath, FuzzySuggestModal, Vault, TFolder } from "obsidian";
+import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, normalizePath, FuzzySuggestModal, Vault, TFolder, setTooltip, setIcon } from "obsidian";
 import { AllCanvasNodeData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
@@ -7,8 +7,6 @@ import { executePythonString } from "./pythonexecution";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge, ExtendedNode } from "./canvasdefinitions";
 import { workflowNodesDimensions } from "./constants";
-
-import { performance } from 'perf_hooks';
 
 export interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
@@ -274,19 +272,45 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 		this.registerEvent(this.app.workspace.on('layout-change', () =>
 		{
+			// eslint-disable-next-line @typescript-eslint/no-this-alias
+			const that = this;
+
 			const view : CanvasView|null = this.app.workspace.getActiveViewOfType(ItemView) as CanvasView;
 			if(view === null) return;
 			if(!view.hasOwnProperty('canvas')) {
 				return;
 			}
-
+			
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const viewFilePath: string = (view as any).file.path;
 			const canvas: ExtendedCanvas = view.canvas;
-
+			
+			
 			if(view.originalAddEdge) canvas.addEdge = view.originalAddEdge;
 			if(view.originalAddNode) canvas.addNode = view.originalAddNode;
 			if(view.originalRemoveNode) canvas.removeNode = view.originalRemoveNode;
+			if(view.originalMenuRender) canvas.menu.render = view.originalMenuRender;
+
+
+			view.originalMenuRender = canvas.menu.render;
+			canvas.menu.render = async function(redraw: boolean) {
+				if(!view.originalMenuRender) return;
+				view.originalMenuRender.call(canvas.menu, redraw);
+
+				if(!redraw) return;
+			
+				const menuEl: HTMLElement = canvas.menu.menuEl;
+				const button = menuEl.createEl("button", "clickable-icon");
+				setTooltip(button, "Execute script");
+				setIcon(button, "play");
+				
+				button.onclick = function () {
+					that.handleRun();
+				}
+
+			}
+
+
 
 			view.originalAddEdge = canvas.addEdge;
 			canvas.addEdge = async function(edge: ExtendedEdge) {
@@ -352,8 +376,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 					node.originalMoveAndResize = node.moveAndResize;
 					node.moveAndResize = async function(newPositionAndSize: Box) {
 						if(!node.originalMoveAndResize) return;
-
-						const startTime = performance.now();
 
 						canvas.requestSave();
 						
@@ -471,7 +493,6 @@ export default class CanvasBlocksPlugin extends Plugin {
 							element.node.preventRecursion = false;
 						}
 						canvas.requestSave();
-						console.log({n: "Full", t: performance.now()-startTime});
 					}
 
 				}
@@ -669,12 +690,15 @@ export default class CanvasBlocksPlugin extends Plugin {
 		const selectedNode = selected.values().next().value;
 		const selectionID = selectedNode.id;
 
-		const selectedData: AllCanvasNodeData = this.getNodeByID(canvas, selectionID);
-		if (selectedData.type === "group")
+		const workflowNodes = await getWorkflowNodes(this, canvas, selectionID); 
+
+		if (workflowNodes)
 		{
-			handleWorkflowFromGroup(this, canvas, selectedData);
+			if (workflowNodes.groupNode === undefined) return;
+			handleWorkflowFromGroup(this, canvas, workflowNodes.groupNode);
 			return;
 		}
+
 
 		const closestID : string|null = await canvasClosestNodeToPositionInBounds(canvas, selectedNode.bbox, 
 			(node: AllCanvasNodeData) => { return node.id === selectionID });
