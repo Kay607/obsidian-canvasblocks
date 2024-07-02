@@ -4,6 +4,7 @@ import { BaseMessage, defaultMessageHandler, executePythonString } from "./pytho
 
 import { TFile, ItemView, Notice, TAbstractFile } from "obsidian";
 import { AllCanvasNodeData, CanvasGroupData, CanvasEdgeData, CanvasFileData, CanvasTextData } from "obsidian/canvas";
+import { TimedCache } from "./cache";
 
 
 
@@ -49,7 +50,7 @@ export interface WorkflowNodes
     groupNode: AllCanvasNodeData|undefined;
 }
 
-export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, view: CanvasView, canvas: ExtendedCanvas, selectedNodeID: string): Promise<WorkflowNodes|undefined> {
+export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedNodeID: string): Promise<WorkflowNodes|undefined> {
     const selectedNode = canvas.nodes.get(selectedNodeID);
     if(selectedNode === undefined) return;
 
@@ -156,6 +157,47 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, view: CanvasV
     return { settingsNode: settingsNode, connectionNodes: connectionNodes, groupNode: closestGroup };
 
 }
+
+// Maps all nodes' ids to the main node's id
+const workflowNodesIDsCache: TimedCache<string, string|undefined> = new TimedCache();
+
+// Maps the main node's id to all nodes in the workflow
+const workflowNodesCache: TimedCache<string, WorkflowNodes|undefined> = new TimedCache();
+
+export async function cachedGetWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedNodeID: string): Promise<WorkflowNodes|undefined> {
+    
+    // Check if the data is cached
+    if(workflowNodesIDsCache.has(selectedNodeID)) {
+        const mainNodeID = workflowNodesIDsCache.get(selectedNodeID);
+        if (mainNodeID === undefined) return undefined;
+
+        const workflowNodes = workflowNodesCache.get(mainNodeID);
+        if (workflowNodes !== undefined)
+            return workflowNodes;
+    }
+
+    // Cached data has not been found
+
+    const workflowNodes = await getWorkflowNodes(plugin, canvas, selectedNodeID);
+
+    if(workflowNodes === undefined)
+    {
+        workflowNodesIDsCache.set(selectedNodeID, undefined);
+        return;
+    }
+
+    workflowNodesCache.set(workflowNodes.settingsNode.id, workflowNodes);
+    workflowNodesIDsCache.set(workflowNodes.settingsNode.id, workflowNodes.settingsNode.id);
+
+    if(workflowNodes.groupNode !== undefined)
+        workflowNodesIDsCache.set(workflowNodes.groupNode.id, workflowNodes.settingsNode.id);
+
+    for (const connectionNode of workflowNodes.connectionNodes)
+        workflowNodesIDsCache.set(connectionNode.id, workflowNodes.settingsNode.id);
+
+    return workflowNodes;
+}
+
 
 export async function handleWorkflowFromGroup(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedData: CanvasGroupData) { 
     const nodes = canvas.data.nodes;  

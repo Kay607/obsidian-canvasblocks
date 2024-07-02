@@ -2,11 +2,13 @@ import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, norma
 import { AllCanvasNodeData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
-import { getWorkflowNodes, handleWorkflowFromGroup, refreshNode } from "./workflow";
+import { cachedGetWorkflowNodes, getWorkflowNodes, handleWorkflowFromGroup, refreshNode } from "./workflow";
 import { executePythonString } from "./pythonexecution";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge, ExtendedNode } from "./canvasdefinitions";
 import { workflowNodesDimensions } from "./constants";
+
+import { performance } from 'perf_hooks';
 
 export interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
@@ -351,6 +353,8 @@ export default class CanvasBlocksPlugin extends Plugin {
 					node.moveAndResize = async function(newPositionAndSize: Box) {
 						if(!node.originalMoveAndResize) return;
 
+						const startTime = performance.now();
+
 						canvas.requestSave();
 						
 						const isInSelected = function(canvas: ExtendedCanvas, id: string) {
@@ -379,7 +383,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 						const translationX = newPosition.x - oldPosition.x;
 						const translationY = newPosition.y - oldPosition.y;
 
-						const workflowNodes = await getWorkflowNodes(this, view, canvas, node.id);
+						const workflowNodes = await cachedGetWorkflowNodes(this, canvas, node.id);
 						if (workflowNodes === undefined)
 						{
 							node.preventRecursion = true;
@@ -467,6 +471,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 							element.node.preventRecursion = false;
 						}
 						canvas.requestSave();
+						console.log({n: "Full", t: performance.now()-startTime});
 					}
 
 				}
@@ -497,7 +502,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 				const newViewFilePath: string = (view as any).file.path;
 				if (viewFilePath != newViewFilePath) {view.originalRemoveNode.call(canvas, deletedNode); return;}
 
-				const workflowNodes = await getWorkflowNodes(this, view, canvas, deletedNode.id);
+				const workflowNodes = await getWorkflowNodes(this, canvas, deletedNode.id);
 				if (workflowNodes === undefined) 
 				{
 					view.originalRemoveNode.call(canvas, deletedNode);
