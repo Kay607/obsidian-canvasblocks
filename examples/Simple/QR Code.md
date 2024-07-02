@@ -29,5 +29,5 @@ qr_file_absolute = os.path.join(vault_path, qr_file)
 
 img.save(qr_file_absolute)
 
-create_file_node(qr_file, script_data["x"], script_data["y"]+script_data["height"]+20)
+create_file_node(qr_file, script_data["x"], script_data["y"]+script_data["height"]+20, 220, 220)
 ```
