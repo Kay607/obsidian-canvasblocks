@@ -6,7 +6,7 @@ install_dependency("requests")
 import requests
 from io import BytesIO
 
-url = in_data["URL"]
+url = in_data["URL"].strip()
 response = requests.get(url)
 img = Image.open(BytesIO(response.content))
 
