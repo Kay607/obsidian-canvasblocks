@@ -46,6 +46,9 @@ export async function canvasClosestNodeToPositionInBounds(canvas: ExtendedCanvas
     const nodes: AllCanvasNodeData[] = canvas.data.nodes;
     let closestDistanceSquared = 1e10;
 
+	// Check nodes is itterable
+	if (!nodes || !nodes.length) return null;
+
     for (const node of nodes) {
         const { minX: x1_min, minY: y1_min, maxX: x1_max, maxY: y1_max } = boundingBox;
         const { minX: x2_min, minY: y2_min, maxX: x2_max, maxY: y2_max } = boundingBoxFromNode(node);
@@ -306,6 +309,97 @@ export default class CanvasBlocksPlugin extends Plugin {
 			if(view.originalAddNode) canvas.addNode = view.originalAddNode;
 			if(view.originalRemoveNode) canvas.removeNode = view.originalRemoveNode;
 			if(view.originalMenuRender) canvas.menu.render = view.originalMenuRender;
+			if(view.originalHandlePaste) canvas.handlePaste = view.originalHandlePaste;
+
+
+			view.originalHandlePaste = canvas.handlePaste;
+			canvas.handlePaste = async function(event: ClipboardEvent) {
+				if(!view.originalHandlePaste) return;
+				
+				const dataJSON = event.clipboardData?.getData("obsidian/canvas");
+				if (dataJSON === undefined) return;
+				if(dataJSON === "") 
+				{
+					view.originalHandlePaste.call(canvas, event);
+					return;
+				}
+
+				// Remove all workflow scripts
+				const data = JSON.parse(dataJSON);
+
+				const newNodes = [];
+				const settingsNodes = [];
+
+				for (const node of data.nodes) {
+					if(node.type === "file")
+					{
+						// Prevents loading files early for performance
+						if (!node.file.endsWith(".md"))
+						{
+							newNodes.push(node);
+							continue;
+						}
+
+
+						// Find the file
+						const file = that.app.vault.getAbstractFileByPath(normalizePath(node.file));
+						if (!(file instanceof TFile)) {
+							newNodes.push(node);
+							continue;
+						}
+
+						// Check that the file is a workflow settings file
+						const text = await that.app.vault.cachedRead(file);
+						const containsSettingsLanguage = checkTextContainsLanguage(text, canvasBlockSettingsLanguageName);
+						
+						if (!containsSettingsLanguage)
+						{
+							newNodes.push(node);
+							continue;
+						}
+
+						// This node is a workflow script settings node
+						settingsNodes.push(node);
+					}
+					else if (node.type === "group")
+					{
+						if (node.label !== workflowNodesDimensions.groupLabel)
+							newNodes.push(node);
+						
+					}
+					else if (node.type === "text")
+					{
+						const containsConnectionPointLanguage = checkTextContainsLanguage(node.text, canvasBlockConnectionPointLanguageName);
+						if (!containsConnectionPointLanguage)
+						{
+							newNodes.push(node);
+							continue;
+						}
+					}
+					else
+						newNodes.push(node);
+				}
+				
+				data.nodes = newNodes;
+
+				const newEvent = new ClipboardEvent('paste', {
+					clipboardData: new DataTransfer()
+				});
+				if (!newEvent.clipboardData) return;
+				newEvent.clipboardData.setData('obsidian/canvas', JSON.stringify(data));
+
+				view.originalHandlePaste.call(canvas, newEvent);
+
+				for (const settingsNode of settingsNodes)
+				{
+					const file = that.app.vault.getAbstractFileByPath(normalizePath(settingsNode.file));
+					if (!(file instanceof TFile))
+						continue;
+
+					addWorkflowScript(that, file, settingsNode.x - data.center.x + canvas.tx, settingsNode.y - data.center.y + canvas.ty);
+				}
+
+			};
 
 
 			view.originalMenuRender = canvas.menu.render;
@@ -388,6 +482,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 					view.originalAddNode.call(canvas, node);
 				}
 				
+				if (canvas.data.nodes === undefined) return;
 				const newNodeData = canvas.data.nodes.find(searchNode => searchNode.id === node.id);
 
 				// The node won't be found if it's a new node
@@ -572,6 +667,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 				const newViewFilePath: string = (view as any).file.path;
 				if (viewFilePath != newViewFilePath) {view.originalRemoveNode.call(canvas, deletedNode); return;}
 
+				if (canvas.data.nodes === undefined) return;
 				const workflowNodes = await getWorkflowNodes(this, canvas, deletedNode.id);
 				if (workflowNodes === undefined) 
 				{

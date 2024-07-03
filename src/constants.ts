@@ -3,5 +3,6 @@ export const workflowNodesDimensions = {
     scriptWidth: 400,
     scriptHeight: 60,
     connectionPointWidth: 180,
-    connectionPointHeight: 50
+    connectionPointHeight: 50,
+    groupLabel: "\u200E"
 };

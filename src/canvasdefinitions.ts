@@ -22,6 +22,8 @@ export interface CanvasView extends ItemView {
     originalHandleSelectionDrag: undefined|((...args: any[]) => any);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
 	originalMenuRender: undefined|((...args: any[]) => any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    originalHandlePaste: undefined|((...args: any[]) => any);
 }
 
 export interface CanvasLeaf extends WorkspaceLeaf {
@@ -90,6 +92,9 @@ export interface ExtendedCanvas {
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
     handleSelectionDrag(event: PointerEvent, t: any, dragNode: any): void;
+
+	// eslint-disable-next-line no-unused-vars
+    handlePaste(event: ClipboardEvent): void;
 }
 
 export interface ExtendedEdge {

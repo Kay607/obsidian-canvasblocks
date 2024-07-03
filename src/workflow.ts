@@ -73,7 +73,7 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
         // If it is a group node, check if there is a settings node within its bounds
         else if(selectedNodeData.type === "group")
         {
-            if (selectedNodeData.label !== "\u200E") return;
+            if (selectedNodeData.label !== workflowNodesDimensions.groupLabel) return;
             
             const possibleMainNodeID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedNode), async (testNode: AllCanvasNodeData) => {
                 const hasCode = await checkContainsLanguage(plugin.app, testNode, canvasBlockSettingsLanguageName);
@@ -87,6 +87,7 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
     }
 
     // Get the settings node
+    if(canvas.data.nodes === undefined) return;
     const settingsNode = canvas.data.nodes.find(node => node.id === settingsNodeID);
     if(settingsNode === undefined) return;
 
@@ -511,7 +512,7 @@ export async function addWorkflowScript(plugin: CanvasBlocksPlugin, scriptFile: 
     }
 
     canvas.createGroupNode({
-        label: "\u200E",
+        label: workflowNodesDimensions.groupLabel,
         pos: {
             x: tx-workflowNodesDimensions.padding,
             y: ty-workflowNodesDimensions.padding,
