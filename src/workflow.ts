@@ -421,6 +421,7 @@ async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas,
         script_settings: scriptSettings,
         script_data: scriptNode,
         vault_path: adapter.basePath,
+        canvas_path: canvas.view.file.path,
         plugin_folder: plugin.getDataFolder(),
     };
 

@@ -6,6 +6,8 @@ import { Position } from "./main";
 
 export interface CanvasView extends ItemView {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    file: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	menu: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     canvas?: any;

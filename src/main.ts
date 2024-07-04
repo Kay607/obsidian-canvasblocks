@@ -919,6 +919,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 			script_data: scriptData,
 			arrow_parameters: arrowParameters,
 			vault_path: adapter.basePath,
+			canvas_path: canvas.view.file.path,
 			plugin_folder: this.getDataFolder(),
 			has_parameter: parameterID !== null,
 		};
