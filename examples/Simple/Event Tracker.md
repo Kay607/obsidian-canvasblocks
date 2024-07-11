@@ -7,7 +7,7 @@ prefix = "Last ran: "
 # YYYY-MM-DD format
 date_format = "%Y-%m-%d"
 
-delimiter = "\`\`\`".replace("\\", "")
+delimiter = "|`|`|`".replace("|", "")
 
 node_text = script_data["text"]
 
