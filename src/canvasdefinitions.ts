@@ -1,6 +1,6 @@
 import { ItemView, TAbstractFile, WorkspaceLeaf } from "obsidian";
 import { CanvasData, CanvasFileData, CanvasGroupData, CanvasTextData } from "obsidian/canvas";
-import { Position } from "./main";
+import { BoundingBox, Position } from "./main";
 
 // any is ignored as the Obsidian Canvas does not have these types
 
@@ -115,6 +115,7 @@ export interface ExtendedEdge {
 }
 
 export interface ExtendedNode {
+    bbox: BoundingBox;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     file: any;
 	id: string;

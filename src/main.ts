@@ -3,10 +3,10 @@ import { AllCanvasNodeData } from "obsidian/canvas";
 
 import { CanvasBlocksPluginSettingTab } from "./settings";
 import { cachedGetWorkflowNodes, getWorkflowNodes, handleWorkflowFromGroup, refreshNode } from "./workflow";
-import { executePythonString } from "./pythonexecution";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge, ExtendedNode } from "./canvasdefinitions";
-import { workflowNodesDimensions } from "./constants";
+import { canvasBlockConnectionPointLanguageName, canvasBlockSettingsLanguageName, scriptCodeBlockLanguageSuffix, supportedLanguagesNamePrefixes, workflowNodesDimensions } from "./constants";
+import { handleSimpleScript } from "./simple";
 
 export interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
@@ -183,7 +183,7 @@ export async function extractLanguageText(app: App, source: AllCanvasNodeData|st
     return match ? match[1] : null;
 }
 
-function checkTextContainsLanguage(text: string, language: string): boolean
+export function checkTextContainsLanguage(text: string, language: string): boolean
 {
 	const languageRegex = new RegExp("```\\s*" + language + "\\s*([\\s\\S]*?)```");
 	return languageRegex.test(text);
@@ -195,6 +195,22 @@ export async function checkContainsLanguage(app: App, node: AllCanvasNodeData, l
 	if(text === null) return false;
 	
 	return checkTextContainsLanguage(text, language);
+}
+
+
+
+export async function checkContainsScript(app: App, node: AllCanvasNodeData): Promise<boolean>
+{
+	const text: string|null = await getNodeText(app, node);
+	if(text === null) return false;
+	
+	return checkTextContainsScript(text);
+}
+
+export function checkTextContainsScript(text: string): boolean
+{
+	const languageRegex = new RegExp("```\\s*(?:" + supportedLanguagesNamePrefixes.join("|") + ")" + scriptCodeBlockLanguageSuffix + "\\s*([\\s\\S]*?)```");
+	return languageRegex.test(text);
 }
 
 
@@ -257,9 +273,7 @@ const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
 	pythonPath: ""
 };
 
-export const pythonCodeBlockLanguageName = "pycanvasblock";
-export const canvasBlockSettingsLanguageName = "canvasblocksettings";
-export const canvasBlockConnectionPointLanguageName = "canvasblockconnectionpoint";
+
 
 export default class CanvasBlocksPlugin extends Plugin {
 	settings: CanvasBlocksPluginSettings;
@@ -702,8 +716,11 @@ export default class CanvasBlocksPlugin extends Plugin {
 
 
 		// Hide code blocks
-		this.registerMarkdownCodeBlockProcessor(pythonCodeBlockLanguageName, () => {});
-		this.registerMarkdownCodeBlockProcessor(canvasBlockSettingsLanguageName, () => {});
+		for (const language of supportedLanguagesNamePrefixes) {
+			// Adds the language to the suffix ("py" + "canvasblock" = "pycanvasblock")
+			const pythonCodeBlockLanguageName = language + scriptCodeBlockLanguageSuffix;
+			this.registerMarkdownCodeBlockProcessor(pythonCodeBlockLanguageName, () => {});
+		}
 
 		// Render script connections
 		this.registerMarkdownCodeBlockProcessor(canvasBlockConnectionPointLanguageName, async (source, el) =>
@@ -843,87 +860,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 			return;
 		}
 
-
-		const closestID : string|null = await canvasClosestNodeToPositionInBounds(canvas, selectedNode.bbox, 
-			(node: AllCanvasNodeData) => { return node.id === selectionID });
-
-		this.handleCommand(canvas, selectionID, closestID);
+		handleSimpleScript(this, canvas, selectionID, selectedNode);
 	}
 
-	getNodeByID(canvas: ExtendedCanvas, id: string)
+	getNodeByID(canvas: ExtendedCanvas, id: string): AllCanvasNodeData|undefined
 	{
-		return canvas.data.nodes.filter(node => node.id === id)[0];
-	}
-
-
-	async handleCommand(canvas: ExtendedCanvas, selectedID: string, otherID: string|null)
-	{
-		// If selected and other are both scripts, use selected as the script
-		// If neither are scripts, return
-		// Otherwise, use the valid script as a script
-		const selectedData = this.getNodeByID(canvas, selectedID);
-		const selectedIsValidScript = await checkContainsLanguage(this.app, selectedData, pythonCodeBlockLanguageName);
-
-		if (!selectedIsValidScript && otherID === null) { 
-			new Notice('No valid scripts are selected');
-			return;
-		}
-
-		let scriptID: string;
-		let parameterID: string|null;
-
-		if (selectedIsValidScript)
-		{
-			scriptID = selectedID;
-			parameterID = otherID;
-		}
-		else
-		{
-			if(otherID === null) return;
-			const otherData = this.getNodeByID(canvas, otherID);
-			const otherIsValidScript = await checkContainsLanguage(this.app, otherData, pythonCodeBlockLanguageName);
-			if (!otherIsValidScript) {
-				new Notice('No valid scripts are selected');
-				return;
-			}
-			
-			scriptID = otherID;
-			parameterID = selectedID;
-		}
-
-
-		let parameterData = {};
-		if (parameterID !== null)
-			parameterData = this.getNodeByID(canvas, parameterID);
-		const scriptData = this.getNodeByID(canvas, scriptID);
-
-		// Finds all edges that point into the script node
-		const arrowParamterEdges = canvas.data.edges.filter(edge => edge.toNode === scriptID);
-
-		// Gets the IDs of nodes pointing to the script node
-		const arrowParameterIDs = arrowParamterEdges.map(edge => edge.fromNode);
-
-		// Finds the nodes from the IDs
-		const arrowParameters = canvas.data.nodes.filter((node) => arrowParameterIDs.includes(node.id));
-
-		// Gets the string within the ```pycanvasblock ``` to run as code
-		const scriptCode = await extractLanguageText(this.app, scriptData, pythonCodeBlockLanguageName);
-		if (scriptCode === null) return;
-
-		
-		const adapter : ExtendedDataAdapter = this.app.vault.adapter;
-
-		const injectionData = {
-			execution_type: 'simple',
-			parameter_data: parameterData,
-			script_data: scriptData,
-			arrow_parameters: arrowParameters,
-			vault_path: adapter.basePath,
-			canvas_path: canvas.view.file.path,
-			plugin_folder: this.getDataFolder(),
-			has_parameter: parameterID !== null,
-		};
-
-		executePythonString(this, canvas, scriptCode, injectionData)
+		return canvas.data.nodes.find(node => node.id === id);
 	}
 }
+
