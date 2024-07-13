@@ -7,6 +7,7 @@ import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge, ExtendedNode } from "./canvasdefinitions";
 import { canvasBlockConnectionPointLanguageName, canvasBlockSettingsLanguageName, scriptCodeBlockLanguageSuffix, supportedLanguagesNamePrefixes, workflowNodesDimensions } from "./constants";
 import { handleSimpleScript } from "./simple";
+import { injectFunction } from "./injectFunction";
 
 export interface ExtendedDataAdapter extends DataAdapter {
     basePath?: string;
@@ -318,23 +319,13 @@ export default class CanvasBlocksPlugin extends Plugin {
 			const viewFilePath: string = (view as any).file.path;
 			const canvas: ExtendedCanvas = view.canvas;
 			
-			
-			if(view.originalAddEdge) canvas.addEdge = view.originalAddEdge;
-			if(view.originalAddNode) canvas.addNode = view.originalAddNode;
-			if(view.originalRemoveNode) canvas.removeNode = view.originalRemoveNode;
-			if(view.originalMenuRender) canvas.menu.render = view.originalMenuRender;
-			if(view.originalHandlePaste) canvas.handlePaste = view.originalHandlePaste;
-
-
-			view.originalHandlePaste = canvas.handlePaste;
-			canvas.handlePaste = async function(event: ClipboardEvent) {
-				if(!view.originalHandlePaste) return;
-				
+			// eslint-disable-next-line no-unused-vars
+			injectFunction(canvas, "handlePaste", view, async (originalHandlePaste: (event: ClipboardEvent) => void, event: ClipboardEvent) => {
 				const dataJSON = event.clipboardData?.getData("obsidian/canvas");
 				if (dataJSON === undefined) return;
 				if(dataJSON === "") 
 				{
-					view.originalHandlePaste.call(canvas, event);
+					originalHandlePaste(event);
 					return;
 				}
 
@@ -402,7 +393,7 @@ export default class CanvasBlocksPlugin extends Plugin {
 				if (!newEvent.clipboardData) return;
 				newEvent.clipboardData.setData('obsidian/canvas', JSON.stringify(data));
 
-				view.originalHandlePaste.call(canvas, newEvent);
+				originalHandlePaste(newEvent);
 
 				for (const settingsNode of settingsNodes)
 				{
@@ -413,14 +404,11 @@ export default class CanvasBlocksPlugin extends Plugin {
 					addWorkflowScript(that, file, settingsNode.x - data.center.x + canvas.tx, settingsNode.y - data.center.y + canvas.ty);
 				}
 
-			};
+			});
 
 
-			view.originalMenuRender = canvas.menu.render;
-			canvas.menu.render = async function(redraw: boolean) {
-				if(!view.originalMenuRender) return;
-				view.originalMenuRender.call(canvas.menu, redraw);
-
+			injectFunction(canvas, 'menu.render', view,  async function(originalFunction, redraw: boolean) {
+				originalFunction(redraw);
 				if(!redraw) return;
 			
 				const menuEl: HTMLElement = canvas.menu.menuEl;
@@ -432,26 +420,23 @@ export default class CanvasBlocksPlugin extends Plugin {
 					that.handleRun();
 				}
 
-			}
+			});
 
 
+			// eslint-disable-next-line no-unused-vars
+			injectFunction(canvas, 'addEdge', view, async (originalAddEdge: (edge: ExtendedEdge) => void, edge: ExtendedEdge) => {
 
-			view.originalAddEdge = canvas.addEdge;
-			canvas.addEdge = async function(edge: ExtendedEdge) {
-				if(!view.originalAddEdge) return;
-				view.originalAddEdge.call(canvas, edge);
+				originalAddEdge(edge);
+
 				edge.lastTo = edge.to.node.id;
 
 				// Save to refresh canvas.edges dictionary
 				canvas.requestSave();
 				refreshNode(canvas, edge.from.node.id);
 
-				if(edge.originalEdgeUpdate) edge.update = edge.originalEdgeUpdate;
-				edge.originalEdgeUpdate = edge.update;
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				edge.update = async function(...args: any[]) {
-					if(!edge.originalEdgeUpdate) return;
-					edge.originalEdgeUpdate.apply(this, args);
+				// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-explicit-any
+				injectFunction(edge, 'update', edge, async (originalEdgeUpdate: (...args: any[]) => any, ...args: any[]) => {
+					originalEdgeUpdate(...args);
 
 					// Check if the edge is pointing to a different node
 					if (edge.lastTo !== edge.to.node.id)
@@ -466,14 +451,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 						refreshNode(canvas, lastTo);
 						refreshNode(canvas, edge.to.node.id);
 					}
-				}
-			};
+				});
+			});
 
 
-			const originalRemoveEdge = canvas.removeEdge;
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			canvas.removeEdge = async function(...args: any[]) {
-				
+			// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-explicit-any
+			injectFunction(canvas, 'removeEdge', view, async (originalRemoveEdge: (...args: any[]) => any, ...args: any[]) => {
 				originalRemoveEdge.apply(this, args);
 
 				// Save to refresh canvas.nodes dictionary
@@ -482,18 +465,13 @@ export default class CanvasBlocksPlugin extends Plugin {
 				// Refresh the both connections of the edge
 				refreshNode(canvas, args[0].from.node.id);
 				refreshNode(canvas, args[0].to.node.id);
-			};
+			});
 
-
-			view.originalAddNode = canvas.addNode;
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			canvas.addNode = async function(node: ExtendedNode) {
-				
-				if(!view.originalAddNode) return;
-
+			// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-explicit-any
+			injectFunction(canvas, 'addNode', view, async (originalAddNode: (node: ExtendedNode) => any, node: ExtendedNode) => {
 				if(!node.skipAddNode)
 				{
-					view.originalAddNode.call(canvas, node);
+					originalAddNode(node);
 				}
 				
 				if (canvas.data.nodes === undefined) return;
@@ -527,134 +505,128 @@ export default class CanvasBlocksPlugin extends Plugin {
 						}
 					}
 				}
+			
 
-				
-				if(node.originalMoveAndResize === undefined)
-				{
-					node.originalMoveAndResize = node.moveAndResize;
-					node.moveAndResize = async function(newPositionAndSize: Box) {
-						if(!node.originalMoveAndResize) return;
-
-						canvas.requestSave();
-						
-						const isInSelected = function(canvas: ExtendedCanvas, id: string) {
-							for (const element of canvas.selection) {
-								if (element.id === id) {
-									return true;
-								}
-							}
-							return false;
-						}
-
-						const nodeData = canvas.data.nodes.find(searchNode => searchNode.id === node.id);
-
-						if(nodeData === undefined) return;
-
-						if(node.preventRecursion) {
-							node.originalMoveAndResize.call(this, newPositionAndSize);
-							return;
-						}
-
-						if(!isInSelected(canvas, node.id)) return;
-
-						const oldPosition = {x: node.x, y: node.y};
-						const newPosition = {x: newPositionAndSize.x, y: newPositionAndSize.y};
-
-						const translationX = newPosition.x - oldPosition.x;
-						const translationY = newPosition.y - oldPosition.y;
-
-						const workflowNodes = await cachedGetWorkflowNodes(this, canvas, node.id);
-						if (workflowNodes === undefined)
-						{
-							node.preventRecursion = true;
-							node.moveTo(newPositionAndSize);
-							node.preventRecursion = false;
-							canvas.requestSave();
-							return;
-						}
-
-						if(workflowNodes.groupNode === undefined) return;
-
-
-
-						const settingsNode = canvas.nodes.get(workflowNodes.settingsNode.id);
-						if (settingsNode === undefined) return;
-
-						const settingsNodePosition = { x: settingsNode.x + translationX, y: settingsNode.y + translationY };
-
-						const groupNode = canvas.nodes.get(workflowNodes.groupNode.id);
-						if (groupNode === undefined) return;
-
-						const moveQueue = [];
-						moveQueue.push({node: settingsNode, position: settingsNodePosition});
-
-						const text = await extractLanguageText(this.app, workflowNodes.settingsNode, canvasBlockSettingsLanguageName);
-						if (text === null) return;
-						const scriptSettings: CanvasBlockSetting = JSON.parse(text);
-
-						let numInput = 0;
-						let numOutput = 0;
+			// eslint-disable-next-line no-unused-vars
+				injectFunction(node, 'moveAndResize', node, async (originalMoveAndResize: (newPositionAndSize: Box) => void, newPositionAndSize: Box) => {
+					canvas.requestSave();
 					
-						for (const connectionName in scriptSettings.ioConnections)
-						{
-							const ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
-					
-							const numberOfConnectionsAbove: number = ioConnection.direction === "input" ? numInput : numOutput;
-							const offset: number = ioConnection.direction === "input" ? 0 : workflowNodesDimensions.scriptWidth - workflowNodesDimensions.connectionPointWidth;
-					
-							for (const connectionNodeData of workflowNodes.connectionNodes)
-							{
-								const connectionPointText = await extractLanguageText(this.app, connectionNodeData, canvasBlockConnectionPointLanguageName);
-								if(connectionPointText === null) continue;
-								const connectionPointData: ConnectionPointData = JSON.parse(connectionPointText);
-
-								if (connectionPointData.name === connectionName)
-								{
-									const connectionNode = canvas.nodes.get(connectionNodeData.id);
-									if (connectionNode === undefined) return;
-
-									moveQueue.push({node: connectionNode, position: {
-										x: settingsNodePosition.x + offset,
-										y: settingsNodePosition.y + workflowNodesDimensions.scriptHeight + workflowNodesDimensions.padding + workflowNodesDimensions.connectionPointHeight * numberOfConnectionsAbove,
-									}});
-									break;
-								}
-							}
-
-							if (ioConnection.direction === "input") numInput++;
-							else numOutput++;
-						}
-
-						moveQueue.push({node: groupNode, position: {
-							x: settingsNodePosition.x - workflowNodesDimensions.padding,
-							y: settingsNodePosition.y - workflowNodesDimensions.padding,
-						}});
-		
-						const moveQueueIds = [];
-						for (const element of moveQueue) {
-							moveQueueIds.push(element.node.id);
-						}
-
-						const relevantSelectedNodes = [];
+					const isInSelected = function(canvas: ExtendedCanvas, id: string) {
 						for (const element of canvas.selection) {
-							if (moveQueueIds.includes(element.id)) {
-								relevantSelectedNodes.push(element);
+							if (element.id === id) {
+								return true;
 							}
 						}
-
-						if(relevantSelectedNodes.length === 0) return;
-						if(relevantSelectedNodes[0].id !== node.id) return;
-
-						for (const element of moveQueue) {
-							element.node.preventRecursion = true;
-							element.node.moveTo(element.position);
-							element.node.preventRecursion = false;
-						}
-						canvas.requestSave();
+						return false;
 					}
 
-				}
-			};
+					const nodeData = canvas.data.nodes.find(searchNode => searchNode.id === node.id);
+
+					if(nodeData === undefined) return;
+
+					if(node.preventRecursion) {
+						originalMoveAndResize(newPositionAndSize);
+						return;
+					}
+
+					if(!isInSelected(canvas, node.id)) return;
+
+					const oldPosition = {x: node.x, y: node.y};
+					const newPosition = {x: newPositionAndSize.x, y: newPositionAndSize.y};
+
+					const translationX = newPosition.x - oldPosition.x;
+					const translationY = newPosition.y - oldPosition.y;
+
+					const workflowNodes = await cachedGetWorkflowNodes(this, canvas, node.id);
+					if (workflowNodes === undefined)
+					{
+						node.preventRecursion = true;
+						node.moveTo(newPositionAndSize);
+						node.preventRecursion = false;
+						canvas.requestSave();
+						return;
+					}
+
+					if(workflowNodes.groupNode === undefined) return;
+
+
+
+					const settingsNode = canvas.nodes.get(workflowNodes.settingsNode.id);
+					if (settingsNode === undefined) return;
+
+					const settingsNodePosition = { x: settingsNode.x + translationX, y: settingsNode.y + translationY };
+
+					const groupNode = canvas.nodes.get(workflowNodes.groupNode.id);
+					if (groupNode === undefined) return;
+
+					const moveQueue = [];
+					moveQueue.push({node: settingsNode, position: settingsNodePosition});
+
+					const text = await extractLanguageText(this.app, workflowNodes.settingsNode, canvasBlockSettingsLanguageName);
+					if (text === null) return;
+					const scriptSettings: CanvasBlockSetting = JSON.parse(text);
+
+					let numInput = 0;
+					let numOutput = 0;
+				
+					for (const connectionName in scriptSettings.ioConnections)
+					{
+						const ioConnection: IOConnection = scriptSettings.ioConnections[connectionName];
+				
+						const numberOfConnectionsAbove: number = ioConnection.direction === "input" ? numInput : numOutput;
+						const offset: number = ioConnection.direction === "input" ? 0 : workflowNodesDimensions.scriptWidth - workflowNodesDimensions.connectionPointWidth;
+				
+						for (const connectionNodeData of workflowNodes.connectionNodes)
+						{
+							const connectionPointText = await extractLanguageText(this.app, connectionNodeData, canvasBlockConnectionPointLanguageName);
+							if(connectionPointText === null) continue;
+							const connectionPointData: ConnectionPointData = JSON.parse(connectionPointText);
+
+							if (connectionPointData.name === connectionName)
+							{
+								const connectionNode = canvas.nodes.get(connectionNodeData.id);
+								if (connectionNode === undefined) return;
+
+								moveQueue.push({node: connectionNode, position: {
+									x: settingsNodePosition.x + offset,
+									y: settingsNodePosition.y + workflowNodesDimensions.scriptHeight + workflowNodesDimensions.padding + workflowNodesDimensions.connectionPointHeight * numberOfConnectionsAbove,
+								}});
+								break;
+							}
+						}
+
+						if (ioConnection.direction === "input") numInput++;
+						else numOutput++;
+					}
+
+					moveQueue.push({node: groupNode, position: {
+						x: settingsNodePosition.x - workflowNodesDimensions.padding,
+						y: settingsNodePosition.y - workflowNodesDimensions.padding,
+					}});
+	
+					const moveQueueIds = [];
+					for (const element of moveQueue) {
+						moveQueueIds.push(element.node.id);
+					}
+
+					const relevantSelectedNodes = [];
+					for (const element of canvas.selection) {
+						if (moveQueueIds.includes(element.id)) {
+							relevantSelectedNodes.push(element);
+						}
+					}
+
+					if(relevantSelectedNodes.length === 0) return;
+					if(relevantSelectedNodes[0].id !== node.id) return;
+
+					for (const element of moveQueue) {
+						element.node.preventRecursion = true;
+						element.node.moveTo(element.position);
+						element.node.preventRecursion = false;
+					}
+					canvas.requestSave();
+				});
+			});
 
 			// Add the moveAndResize to existing nodes with a 200ms delay
 			for (const node of canvas.nodes.values()) {
@@ -663,42 +635,37 @@ export default class CanvasBlocksPlugin extends Plugin {
 					canvas.addNode(node);
 				}, 100);
 			}
-				
 
-
-			view.originalRemoveNode = canvas.removeNode;
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			canvas.removeNode = async function(deletedNode: any) {
-				if(!view.originalRemoveNode) return;
-
+			// eslint-disable-next-line no-unused-vars
+			injectFunction(canvas, "removeNode", view, async function(originalRemoveNode: (deletedNode: ExtendedNode) => void, deletedNode: ExtendedNode) {
 				// Save to refresh canvas.edges dictionary
 				canvas.requestSave();
 
 				const isViewLoaded: boolean = view._loaded;
-				if(!isViewLoaded) {view.originalRemoveNode.call(canvas, deletedNode); return;}
+				if(!isViewLoaded) { originalRemoveNode(deletedNode); return; }
 
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				const newViewFilePath: string = (view as any).file.path;
-				if (viewFilePath != newViewFilePath) {view.originalRemoveNode.call(canvas, deletedNode); return;}
+				if (viewFilePath != newViewFilePath) { originalRemoveNode(deletedNode); return; }
 
 				if (canvas.data.nodes === undefined) return;
-				const workflowNodes = await getWorkflowNodes(this, canvas, deletedNode.id);
+				const workflowNodes = await getWorkflowNodes(that, canvas, deletedNode.id);
 				if (workflowNodes === undefined) 
 				{
-					view.originalRemoveNode.call(canvas, deletedNode);
+					originalRemoveNode(deletedNode);
 					canvas.requestSave(); 
 					return;
 				}
 
 				const settingsNode = canvas.nodes.get(workflowNodes.settingsNode.id)
 				if (settingsNode !== undefined)
-					view.originalRemoveNode.call(canvas, settingsNode);
+					originalRemoveNode(settingsNode);
 
 				if (workflowNodes.groupNode !== undefined)
 				{
 					const groupNode = canvas.nodes.get(workflowNodes.groupNode.id)
 					if (groupNode !== undefined)
-						view.originalRemoveNode.call(canvas, groupNode);
+						originalRemoveNode(groupNode);
 				}
 
 
@@ -706,11 +673,11 @@ export default class CanvasBlocksPlugin extends Plugin {
 				{
 					const deleteNode = canvas.nodes.get(node.id);
 					if (deleteNode !== undefined)
-						view.originalRemoveNode.call(canvas, deleteNode);
+						originalRemoveNode(deleteNode);
 				}
 
 				canvas.requestSave();
-			};
+			});
 
 		}));
 

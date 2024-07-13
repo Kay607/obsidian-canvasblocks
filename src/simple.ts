@@ -1,6 +1,6 @@
 import { AllCanvasNodeData } from "obsidian/canvas";
 import { ExtendedCanvas, ExtendedNode } from "./canvasdefinitions";
-import CanvasBlocksPlugin, { canvasClosestNodeToPositionInBounds, checkContainsLanguage, checkContainsScript } from "./main";
+import CanvasBlocksPlugin, { canvasClosestNodeToPositionInBounds, checkContainsScript } from "./main";
 import { Notice } from "obsidian";
 import { executeScript } from "./scriptexecution";
 
@@ -48,7 +48,7 @@ export async function handleSimpleScript(plugin: CanvasBlocksPlugin, canvas: Ext
     }
 
 
-    let parameterData: AllCanvasNodeData|{}|undefined = {};
+    let parameterData: AllCanvasNodeData|Record<string, unknown>|undefined = {};
     if (parameterID !== null)
         parameterData = plugin.getNodeByID(canvas, parameterID);
     const scriptData = plugin.getNodeByID(canvas, scriptID);

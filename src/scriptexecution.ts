@@ -87,15 +87,16 @@ export async function defaultMessageHandler(canvas: ExtendedCanvas, message: Bas
     return null;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function executeScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptData: AllCanvasNodeData, injectionData: any, scriptType: string, 
     // eslint-disable-next-line no-unused-vars
     messageCallback: (canvas: ExtendedCanvas, message: BaseMessage) =>  Promise<BaseMessage|null|undefined> = defaultMessageHandler, 
     // eslint-disable-next-line no-unused-vars
     errorCallback: (canvas: ExtendedCanvas, error: string) => void = defaultErrorHandler) 
 {
-    let allowedLanguages: (keyof typeof languageToLanguageNameMap)[] = ["python", "javascript"];
+    const allowedLanguages: (keyof typeof languageToLanguageNameMap)[] = ["python", "javascript"];
 
-    let nodeText = await getNodeText(plugin.app, scriptData);
+    const nodeText = await getNodeText(plugin.app, scriptData);
     if (nodeText === null) return;
     
     let chosenLanguage: string|null = null;
@@ -129,8 +130,8 @@ export async function executeScript(plugin: CanvasBlocksPlugin, canvas: Extended
     if (scriptType === "workflow")
         scriptText += workflowTrailingCode;
 
-
-    const executionFunctions: Record<string, (plugin: any, canvas: any, scriptText: string, fullInjectionData: any, messageCallback: any, errorCallback: any) => Promise<any>> = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+    const executionFunctions: Record<string, (plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, scriptText: string, fullInjectionData: any, messageCallback: any, errorCallback: any) => Promise<any>> = {
         python: executePythonString,
         //javascript: executeJavascriptString
     };

@@ -12,20 +12,6 @@ export interface CanvasView extends ItemView {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     canvas?: any;
 	_loaded: boolean;
-
-	// Added by the plugin
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalAddEdge: undefined|((...args: any[]) => any);
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalAddNode: undefined|((...args: any[]) => any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalRemoveNode: undefined|((...args: any[]) => any);
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalHandleSelectionDrag: undefined|((...args: any[]) => any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-	originalMenuRender: undefined|((...args: any[]) => any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalHandlePaste: undefined|((...args: any[]) => any);
 }
 
 export interface CanvasLeaf extends WorkspaceLeaf {
@@ -107,11 +93,6 @@ export interface ExtendedEdge {
 	from: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
 	update: any;
-
-
-	// Added by the plugin
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalEdgeUpdate: undefined|((...args: any[]) => any);
 }
 
 export interface ExtendedNode {
@@ -136,9 +117,6 @@ export interface ExtendedNode {
 	detach(): undefined;
 
 	// Added by the plugin
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-    originalMoveAndResize: undefined|((...args: any[]) => any);
 	skipAddNode: boolean|undefined;
-
 	preventRecursion: boolean;
 }

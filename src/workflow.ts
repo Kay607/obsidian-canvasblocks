@@ -1,4 +1,4 @@
-import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, ExtendedDataAdapter, getNodeText, BoundingBox, checkContainsScript } from "./main";
+import CanvasBlocksPlugin, { boundingBoxFromNode, canvasClosestNodeToPositionInBounds, checkContainsLanguage, extractLanguageText, ConnectionPointData, CanvasBlockSetting, IOConnection, getNodeText, BoundingBox, checkContainsScript } from "./main";
 import { CanvasView, ExtendedCanvas } from "./canvasdefinitions";
 
 import { TFile, ItemView, Notice, TAbstractFile } from "obsidian";
@@ -410,7 +410,6 @@ async function executeWorkflowScript(plugin: CanvasBlocksPlugin, canvas: Extende
         inputData[connectionName] = data
     }
 
-    const adapter : ExtendedDataAdapter = plugin.app.vault.adapter;
     const injectionData = {
         in_data: inputData,
         out_data: outputData,
