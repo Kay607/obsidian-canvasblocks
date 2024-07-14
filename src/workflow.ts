@@ -413,7 +413,7 @@ async function executeWorkflowScript(plugin: CanvasBlocksPlugin, canvas: Extende
     if(processScriptText === null) return false;
 
 
-    if(scriptSettings.type !== "simple") {
+    if(scriptSettings.type !== "workflow") {
 
         scriptSettings.type = "workflow";
 
