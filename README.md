@@ -130,11 +130,11 @@ Example: `out_data["Image connection name"] = Image.new('RGB', (100, 100))`
 API Keys, tokens or any other data can be stored in one of the "variables". This can be accessed in the settings
 ![image](https://github.com/user-attachments/assets/c9735bd8-0a03-44e0-a801-1cb1126bd613)
 
-Add a new variable and set the name and value of it. This name must match the name used in the scripts. Certain example scripts such as [Send Discord Image](examples/Workflow/Send Discord Message.md) will have a specific name required, for this example it is `discord_token` for the bot's token
+Add a new variable and set the name and value of it. This name must match the name used in the scripts. Certain example scripts such as ![Send Discord Image](https://github.com/Kay607/obsidian-canvasblocks/blob/main/examples/Workflow/Send%20Discord%20Message.md) will have a specific name required, for this example it is `discord_token` for the bot's token
 
 To access this in a script, you must grant intents to the script by setting `allowedVariables` in the `canvasblocksettings` code block. This will work in Simple and Workflow scripts. The value of this setting must be a list of strings where each string is the name of the variable
 
-An example of this from [Send Discord Image](examples/Workflow/Send Discord Message.md)
+An example of this from ![Send Discord Image](https://github.com/Kay607/obsidian-canvasblocks/blob/main/examples/Workflow/Send%20Discord%20Message.md)
 
 ```canvasblocksettings
 {
