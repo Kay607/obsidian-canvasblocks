@@ -124,6 +124,7 @@ export interface IOConnection {
 
 export interface CanvasBlockSetting
 {
+	type: "simple" | "workflow";
 	ioConnections: { [key: string]: IOConnection };
 }
 
@@ -685,9 +686,12 @@ export default class CanvasBlocksPlugin extends Plugin {
 		// Hide code blocks
 		for (const language of supportedLanguagesNamePrefixes) {
 			// Adds the language to the suffix ("py" + "canvasblock" = "pycanvasblock")
-			const pythonCodeBlockLanguageName = language + scriptCodeBlockLanguageSuffix;
-			this.registerMarkdownCodeBlockProcessor(pythonCodeBlockLanguageName, () => {});
+			const codeBlockLanguageName = language + scriptCodeBlockLanguageSuffix;
+			this.registerMarkdownCodeBlockProcessor(codeBlockLanguageName, () => {});
 		}
+		// Hide settings blocks
+		this.registerMarkdownCodeBlockProcessor(canvasBlockSettingsLanguageName, () => {});
+
 
 		// Render script connections
 		this.registerMarkdownCodeBlockProcessor(canvasBlockConnectionPointLanguageName, async (source, el) =>

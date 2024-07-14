@@ -59,7 +59,15 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
     if(selectedNodeData === undefined) return;
 
     // Check if the node contains a code block of language canvasBlockSettingsLanguageName
-    const isSettingsNode: boolean = await checkContainsLanguage(plugin.app, selectedNodeData, canvasBlockSettingsLanguageName)
+    let isSettingsNode: boolean = await checkContainsLanguage(plugin.app, selectedNodeData, canvasBlockSettingsLanguageName)
+    if (isSettingsNode)
+    {
+        const settingsText = await extractLanguageText(plugin.app, selectedNodeData, canvasBlockSettingsLanguageName);
+        if(settingsText === null) return;
+        const settings: CanvasBlockSetting = JSON.parse(settingsText);
+        isSettingsNode = settings.type !== "simple";
+    }
+
     let settingsNodeID = selectedNodeData.id;
 
     if(!isSettingsNode){
@@ -76,7 +84,14 @@ export async function getWorkflowNodes(plugin: CanvasBlocksPlugin, canvas: Exten
             if (selectedNodeData.label !== workflowNodesDimensions.groupLabel) return;
             
             const possibleMainNodeID = await canvasClosestNodeToPositionInBounds(canvas, boundingBoxFromNode(selectedNode), async (testNode: AllCanvasNodeData) => {
-                const hasCode = await checkContainsLanguage(plugin.app, testNode, canvasBlockSettingsLanguageName);
+                let hasCode = await checkContainsLanguage(plugin.app, testNode, canvasBlockSettingsLanguageName);
+                if (hasCode) {
+                    const settingsText = await extractLanguageText(plugin.app, testNode, canvasBlockSettingsLanguageName);
+                    if (settingsText === null) return false;
+                    const settings: CanvasBlockSetting = JSON.parse(settingsText);
+                    hasCode = settings.type !== "simple";
+                }
+
                 return !hasCode;
             });
 
@@ -392,6 +407,29 @@ async function executeWorkflowScript(plugin: CanvasBlocksPlugin, canvas: Extende
 
     const scriptSettings: CanvasBlockSetting = JSON.parse(settingsLanguageBlock);
 
+
+    // Add the workflow type to the canvasblocksettings block if it doesn't exist
+    const processScriptText = await getNodeText(plugin.app, scriptNode);
+    if(processScriptText === null) return false;
+
+
+    if(scriptSettings.type !== "simple") {
+
+        scriptSettings.type = "workflow";
+
+        // Replace old settings with new settings (keep the rest of the file)
+        const newSettingsText = JSON.stringify(scriptSettings, null, "\t");
+        const newText = processScriptText.replace(settingsLanguageBlock, newSettingsText);
+
+        // Modify the file
+        const file = plugin.app.vault.getFileByPath(scriptNode.file);
+        if (file === null) return false;
+        plugin.app.vault.modify(file, newText);
+        new Notice('WARNING: Settings type not set to workflow. This has been automatically fixed (Workflow script)', 10000);
+    }
+
+
+
     const inputData: { [key: string]: string } = {};
     const outputData: { [key: string]: null } = {};
 
@@ -433,6 +471,7 @@ async function executeWorkflowScript(plugin: CanvasBlocksPlugin, canvas: Extende
             }
         }
     }
+
 
     const sucess = await executeScript(plugin, canvas, scriptNode, injectionData, "workflow", messageHandler);
     return sucess;
