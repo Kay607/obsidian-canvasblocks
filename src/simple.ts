@@ -1,8 +1,9 @@
 import { AllCanvasNodeData } from "obsidian/canvas";
 import { ExtendedCanvas, ExtendedNode } from "./canvasdefinitions";
-import CanvasBlocksPlugin, { canvasClosestNodeToPositionInBounds, checkContainsScript } from "./main";
+import CanvasBlocksPlugin, { canvasClosestNodeToPositionInBounds, checkContainsScript, checkTextContainsLanguage, getNodeText } from "./main";
 import { Notice } from "obsidian";
 import { executeScript } from "./scriptexecution";
+import { canvasBlockSettingsLanguageName } from "./constants";
 
 export async function handleSimpleScript(plugin: CanvasBlocksPlugin, canvas: ExtendedCanvas, selectedID: string, selectedNode: ExtendedNode) {
     
@@ -45,6 +46,42 @@ export async function handleSimpleScript(plugin: CanvasBlocksPlugin, canvas: Ext
         
         scriptID = otherID;
         parameterID = selectedID;
+    }
+
+
+    // Add the canvasblocksettings block if it doesn't exist
+    const processScriptData = plugin.getNodeByID(canvas, scriptID);
+    if(processScriptData === undefined) return;
+    const processScriptText = await getNodeText(plugin.app, processScriptData);
+    if(processScriptText === null) return;
+
+    if(!await checkTextContainsLanguage(processScriptText, canvasBlockSettingsLanguageName)) {
+
+        const settingsData = {
+            type: "simple"
+        };
+
+        const mergeData = "```" + canvasBlockSettingsLanguageName + "\n" + JSON.stringify(settingsData, null, "\t") + "\n" + "```";
+
+        // get position of first instance of "```"
+        const position = processScriptText.indexOf("```");
+
+        const newText = processScriptText.slice(0, position) + "\n" + mergeData + "\n" + processScriptText.slice(position);
+
+
+        if (processScriptData.type === "text")
+        {
+            canvas.nodes.get(processScriptData.id).setText(newText);
+            canvas.data.nodes.filter(node => node.id === processScriptData.id)[0].text = newText;
+            canvas.requestSave();
+        }
+        else if (processScriptData.type === "file")
+        {
+            const file = plugin.app.vault.getFileByPath(processScriptData.file);
+            if (file === null) return;
+            plugin.app.vault.modify(file, newText);
+        }
+        new Notice('WARNING: Settings not added to script. This has been automatically fixed (Simple script)', 10000);
     }
 
 

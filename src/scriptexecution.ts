@@ -60,6 +60,7 @@ export async function defaultMessageHandler(canvas: ExtendedCanvas, message: Bas
             {
                 canvas.nodes.get(message.id).setText(message.text);
                 canvas.data.nodes.filter(node => node.id === message.id)[0].text = message.text;
+                canvas.requestSave();
             }
             break;
 
