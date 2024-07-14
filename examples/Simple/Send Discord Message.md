@@ -26,7 +26,7 @@ match parameter_data["type"]:
 
 			dataType = "text"
 		else:
-			data = get_parameter_file("rb")
+			data = io.FileIO(get_parameter_file_path(), "rb")
 			dataType = "file"
 
 	case "link":
@@ -65,14 +65,14 @@ bot = discord.Client(intents=intents)
 # Event to execute when the bot is ready
 @bot.event
 async def on_ready():
-	# Fetch the user
+	# Fetch the channel
 	channel = bot.get_channel(CHANNEL_ID)
 
 	if not channel:
 		channel = bot.get_user(CHANNEL_ID)
   
 	if channel:
-		# Send a message to the user
+		# Send a message to the channel
 		match dataType:
 			case "text":
 				await channel.send(data)
@@ -80,12 +80,11 @@ async def on_ready():
 				file = discord.File(data, fileName)
 				await channel.send(file=file)
 
-		# Close the bot after sending the message
 	else:
 		notice("Channel not found")
 		
+	# Close the bot after sending the message
 	await bot.close()
-
 
 async def main():
     async with bot:

@@ -69,7 +69,10 @@ if execution_type == "workflow": # type: ignore
             newValue = int(value)
 
         if ioType == "float":
-            newValue = float(value)  
+            newValue = float(value)
+
+        if ioType == "file":
+            newValue = json.loads(value)
 
         in_data[ioName] = newValue # type: ignore
 
