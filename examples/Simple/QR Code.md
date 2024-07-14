@@ -1,4 +1,10 @@
 # 📱 QR Code
+```canvasblocksettings
+{
+	"type": "simple"
+}
+```
+
 ```pycanvasblock
 import os, random, string
 

@@ -1,11 +1,6 @@
-```pycanvasblock
-out_data["DataOut"] = in_data["DataIn"]
-```
-
-
-
 ```canvasblocksettings
 {
+	"type": "workflow",
 	"ioConnections":
 	{
 		"DataIn": {
@@ -19,4 +14,8 @@ out_data["DataOut"] = in_data["DataIn"]
 		}
 	}
 }
+```
+
+```pycanvasblock
+out_data["DataOut"] = in_data["DataIn"]
 ```

@@ -1,4 +1,10 @@
 # 🎨 Grayscale 
+```canvasblocksettings
+{
+	"type": "simple"
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image

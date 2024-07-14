@@ -1,3 +1,16 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"Image": {
+			"direction": "input",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image
@@ -12,17 +25,4 @@ image_file_absolute = os.path.join(vault_path, image_file)
 in_data["Image"].save(image_file_absolute)
 
 create_file_node(image_file, script_data["x"], script_data["y"]+script_data["height"]+120)
-```
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"Image": {
-			"direction": "input",
-			"type": "image"
-		}
-	}
-}
 ```

@@ -1,12 +1,6 @@
-```pycanvasblock
-text = in_data["Text"]
-
-create_text_node(text, script_data["x"], script_data["y"]+script_data["height"]+120)
-```
-
-
 ```canvasblocksettings
 {
+	"type": "workflow",
 	"ioConnections":
 	{
 		"Text": {
@@ -15,4 +9,10 @@ create_text_node(text, script_data["x"], script_data["y"]+script_data["height"]+
 		}
 	}
 }
+```
+
+```pycanvasblock
+text = in_data["Text"]
+
+create_text_node(text, script_data["x"], script_data["y"]+script_data["height"]+120)
 ```

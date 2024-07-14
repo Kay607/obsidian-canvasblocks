@@ -1,3 +1,16 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"Image": {
+			"direction": "input",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image
@@ -18,17 +31,4 @@ html_img_tag = f'<img src="data:image/png;base64,{base64_str}" alt="Image">'
 
 
 create_text_node(html_img_tag, script_data["x"], script_data["y"]+script_data["height"]+120, 400, 400)
-```
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"Image": {
-			"direction": "input",
-			"type": "image"
-		}
-	}
-}
 ```

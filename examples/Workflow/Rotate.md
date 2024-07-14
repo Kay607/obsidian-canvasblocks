@@ -1,3 +1,26 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"Image": {
+			"direction": "input",
+			"type": "image"
+		},
+		
+		"Angle": {
+			"direction": "input",
+			"type": "float"
+		},
+
+		"Rotated": {
+			"direction": "output",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image
@@ -20,28 +43,4 @@ img_rotated = Image.new("RGBA", new_size, (0, 0, 0, 0))
 img_rotated.paste(img.rotate(-rotate_angle, expand=True), (0, 0))
 
 out_data["Rotated"] = img_rotated
-```
-
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"Image": {
-			"direction": "input",
-			"type": "image"
-		},
-		
-		"Angle": {
-			"direction": "input",
-			"type": "float"
-		},
-
-		"Rotated": {
-			"direction": "output",
-			"type": "image"
-		}
-	}
-}
 ```

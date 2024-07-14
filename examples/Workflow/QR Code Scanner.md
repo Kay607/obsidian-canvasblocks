@@ -1,3 +1,21 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"QR Code": {
+			"direction": "input",
+			"type": "image"
+		},
+		
+		"Text": {
+			"direction": "output",
+			"type": "text"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 install_dependency("pyzbar")
@@ -19,22 +37,4 @@ if qr_code_data:
     out_data["Text"] = qr_text
 else:
     raise Exception("No QR code found")
-```
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"QR Code": {
-			"direction": "input",
-			"type": "image"
-		},
-		
-		"Text": {
-			"direction": "output",
-			"type": "text"
-		}
-	}
-}
 ```

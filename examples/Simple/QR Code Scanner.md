@@ -1,4 +1,10 @@
 # 📷 QR Code Scanner
+```canvasblocksettings
+{
+	"type": "simple"
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 install_dependency("pyzbar")

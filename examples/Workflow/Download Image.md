@@ -1,3 +1,20 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections": {
+		"URL": {
+			"direction": "input",
+			"type": "text"
+		},
+		
+		"Image": {
+			"direction": "output",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image
@@ -11,20 +28,4 @@ response = requests.get(url)
 img = Image.open(BytesIO(response.content))
 
 out_data["Image"] = img
-```
-
-```canvasblocksettings
-{
-	"ioConnections": {
-		"URL": {
-			"direction": "input",
-			"type": "text"
-		},
-		
-		"Image": {
-			"direction": "output",
-			"type": "image"
-		}
-	}
-}
 ```

@@ -1,4 +1,10 @@
 # ⏰ Event Tracker
+```canvasblocksettings
+{
+	"type": "simple"
+}
+```
+
 ```pycanvasblock
 from datetime import datetime
 
@@ -11,9 +17,9 @@ delimiter = "|`|`|`".replace("|", "")
 
 node_text = script_data["text"]
 
-parts = node_text.split(delimiter, 2)
-if len(parts) > 2:
-	script_text = delimiter.join(parts[:2]) + delimiter
+parts = node_text.split(delimiter, 4)
+if len(parts) > 4:
+	script_text = delimiter.join(parts[:4]) + delimiter
 else:
 	script_text = node_text
 

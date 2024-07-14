@@ -1,11 +1,6 @@
-```pycanvasblock
-print(in_data["DataIn"])
-```
-
-
-
 ```canvasblocksettings
 {
+	"type": "workflow",
 	"ioConnections":
 	{
 		"DataIn": {
@@ -14,4 +9,8 @@ print(in_data["DataIn"])
 		}
 	}
 }
+```
+
+```pycanvasblock
+print(in_data["DataIn"])
 ```

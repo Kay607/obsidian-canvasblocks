@@ -1,18 +1,6 @@
-```pycanvasblock
-install_dependency("pillow", "PIL")
-install_dependency("pytesseract")
-from PIL import Image
-import pytesseract
-
-img = in_data["Image"].convert("RGB")
-
-text = pytesseract.image_to_string(img, lang='eng')
-out_data["OCR Text"] = text
-```
-
-
 ```canvasblocksettings
 {
+	"type": "workflow",
 	"ioConnections":
 	{
 		"Image": {
@@ -26,4 +14,16 @@ out_data["OCR Text"] = text
 		}
 	}
 }
+```
+
+```pycanvasblock
+install_dependency("pillow", "PIL")
+install_dependency("pytesseract")
+from PIL import Image
+import pytesseract
+
+img = in_data["Image"].convert("RGB")
+
+text = pytesseract.image_to_string(img, lang='eng')
+out_data["OCR Text"] = text
 ```

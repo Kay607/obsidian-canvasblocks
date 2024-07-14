@@ -1,3 +1,21 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"Text": {
+			"direction": "input",
+			"type": "text"
+		},
+		
+		"QR Code": {
+			"direction": "output",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 import os, random, string
 
@@ -21,23 +39,4 @@ qr.make(fit=True)
 img = qr.make_image(fill_color="black", back_color="white")
 
 out_data["QR Code"] = img
-```
-
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"Text": {
-			"direction": "input",
-			"type": "text"
-		},
-		
-		"QR Code": {
-			"direction": "output",
-			"type": "image"
-		}
-	}
-}
 ```

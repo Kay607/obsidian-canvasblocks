@@ -1,3 +1,26 @@
+```canvasblocksettings
+{
+	"type": "workflow",
+	"ioConnections":
+	{
+		"Image Left": {
+			"direction": "input",
+			"type": "image"
+		},
+		
+		"Image Right": {
+			"direction": "input",
+			"type": "image"
+		},
+
+		"Merged": {
+			"direction": "output",
+			"type": "image"
+		}
+	}
+}
+```
+
 ```pycanvasblock
 install_dependency("pillow", "PIL")
 from PIL import Image
@@ -38,28 +61,4 @@ merged_image.paste(img1, (0, 0))
 merged_image.paste(img2, (width1, 0))
 
 out_data["Merged"] = merged_image
-```
-
-
-
-```canvasblocksettings
-{
-	"ioConnections":
-	{
-		"Image Left": {
-			"direction": "input",
-			"type": "image"
-		},
-		
-		"Image Right": {
-			"direction": "input",
-			"type": "image"
-		},
-
-		"Merged": {
-			"direction": "output",
-			"type": "image"
-		}
-	}
-}
 ```
