@@ -1,7 +1,7 @@
 import { DataAdapter, Plugin, TFile, ItemView, App, TAbstractFile, Notice, normalizePath, FuzzySuggestModal, Vault, TFolder, setTooltip, setIcon } from "obsidian";
 import { AllCanvasNodeData } from "obsidian/canvas";
 
-import { CanvasBlocksPluginSettingTab } from "./settings";
+import { CanvasBlocksPluginSettings, CanvasBlocksPluginSettingTab, DEFAULT_SETTINGS } from "./settings";
 import { cachedGetWorkflowNodes, getWorkflowNodes, handleWorkflowFromGroup, refreshNode } from "./workflow";
 import { addWorkflowScript } from "./workflow";
 import { CanvasView, ExtendedCanvas, ExtendedEdge, ExtendedNode } from "./canvasdefinitions";
@@ -262,27 +262,12 @@ class FuzzyScriptSuggester extends FuzzySuggestModal<TFile>
 }
 
 
-interface CanvasBlocksPluginSettings
-{
-	dataFolder: string;
-	workflowScriptFolder: string;
-	pythonPath: string;
-}
-
-const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
-	dataFolder: "",
-	workflowScriptFolder: "",
-	pythonPath: ""
-};
-
-
 
 export default class CanvasBlocksPlugin extends Plugin {
 	settings: CanvasBlocksPluginSettings;
 	plugin: CanvasBlocksPlugin = this;
 
 	async onload() {
-		//registerEvents(this);
 		await this.loadSettings();
 		await this.saveSettings();
 		this.addSettingTab(new CanvasBlocksPluginSettingTab(this.app, this));

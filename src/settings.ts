@@ -1,6 +1,21 @@
 import CanvasBlocksPlugin from "./main";
 import { App, PluginSettingTab, Setting } from "obsidian";
 
+export interface CanvasBlocksPluginSettings
+{
+	dataFolder: string;
+	workflowScriptFolder: string;
+	pythonPath: string;
+	variables: [string, string][];
+}
+
+export const DEFAULT_SETTINGS: CanvasBlocksPluginSettings = {
+	dataFolder: "",
+	workflowScriptFolder: "",
+	pythonPath: "",
+	variables: []
+};
+
 export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
 	plugin: CanvasBlocksPlugin;
 
@@ -40,7 +55,6 @@ export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
 			})
 		);
 
-
 		new Setting(containerEl)
 			.setName("Python path")
 			.setDesc("Override default python install")
@@ -53,6 +67,64 @@ export class CanvasBlocksPluginSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 			})
 		);
+
+
+		new Setting(containerEl)
+			.setName("Add variable")
+			.addButton((button) => {
+				button
+					.setButtonText("Add variable")
+					.onClick(async () => {
+						this.plugin.settings.variables.push(["", ""]);
+						await this.plugin.saveSettings();
+						this.display();
+				});
+		});
+
+		// Sort by key but put empty keys at the end
+		this.plugin.settings.variables.sort((a, b) => {
+			if (a[0] === "") return 1;
+			if (b[0] === "") return -1;
+			return a[0].localeCompare(b[0]);
+		});
+
+		// Display variables
+		this.plugin.settings.variables.forEach((variable, index) => {
+
+			const key = variable[0];
+			const value = variable[1];
+
+			new Setting(containerEl)
+				.addText((variableKeyText) => {
+					variableKeyText
+						.setPlaceholder("Variable name")
+						.setValue(key)
+						.onChange(async (value) => {
+							this.plugin.settings.variables[index][0] = value;
+							await this.plugin.saveSettings();
+						})
+				})
+				.addText((variableValueText) => {
+					variableValueText
+						.setPlaceholder("Value")
+						.setValue(value)
+						.onChange(async (value) => {
+							this.plugin.settings.variables[index][1] = value;
+							await this.plugin.saveSettings();
+						});		
+				})
+
+				.addExtraButton((removeVariableButton) => {
+					removeVariableButton
+						.setIcon("cross")
+						.onClick(async () => {
+							this.plugin.settings.variables.splice(index, 1);
+							await this.plugin.saveSettings();
+							this.display();
+						});
+				});
+
+		});
 	
 	}
 }
