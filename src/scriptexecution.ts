@@ -1,8 +1,8 @@
 import { Notice, normalizePath } from "obsidian";
 import { AllCanvasNodeData } from "obsidian/canvas";
 import { CanvasLeaf, ExtendedCanvas } from "./canvasdefinitions";
-import { languageToLanguageNameMap, scriptCodeBlockLanguageSuffix, workflowTrailingCode } from "./constants";
-import CanvasBlocksPlugin, { ExtendedDataAdapter, checkTextContainsLanguage, extractLanguageText, getNodeText } from "./main";
+import { canvasBlockSettingsLanguageName, languageToLanguageNameMap, scriptCodeBlockLanguageSuffix, workflowTrailingCode } from "./constants";
+import CanvasBlocksPlugin, { CanvasBlockSetting, ExtendedDataAdapter, checkTextContainsLanguage, extractLanguageText, getNodeText } from "./main";
 import { executePythonString } from "./pythonexecution";
 
 export interface BaseMessage {
@@ -116,13 +116,44 @@ export async function executeScript(plugin: CanvasBlocksPlugin, canvas: Extended
     }
 
 
+    let scriptSettingsText = await extractLanguageText(plugin.app, nodeText, canvasBlockSettingsLanguageName);
+    if (scriptSettingsText === null) return;
+    let scriptSettings: CanvasBlockSetting = JSON.parse(scriptSettingsText);
+
+    // Filter plugin.settings.variables by allowedVariables and create a map
+    let filteredVariables: {[key: string]: string} = {};
+
+    if (scriptSettings.allowedVariables !== undefined)
+    {
+        for (const variable of scriptSettings.allowedVariables) {
+            // Check if the variable exists in plugin.settings.variables
+            let found: boolean = false;
+
+            for (const [key, value] of plugin.settings.variables) {
+                if (key === variable) {
+                    filteredVariables[variable] = value;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                new Notice(`Requested variable "${variable}" cannot be found from plugin settings`);
+                return;
+            }
+        }
+    }
+
+
     const adapter : ExtendedDataAdapter = plugin.app.vault.adapter;
     const fullInjectionData = {
         ...injectionData,
         execution_type: scriptType,
         vault_path: adapter.basePath,
         canvas_path: canvas.view.file.path,
-        plugin_folder: plugin.getDataFolder()
+        plugin_folder: plugin.getDataFolder(),
+        injected_variables: filteredVariables
+
     };
 
     let scriptText = await extractLanguageText(plugin.app, nodeText, languageToLanguageNameMap[chosenLanguage] + scriptCodeBlockLanguageSuffix);

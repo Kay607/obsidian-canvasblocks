@@ -126,6 +126,7 @@ export interface CanvasBlockSetting
 {
 	type: "simple" | "workflow";
 	ioConnections: { [key: string]: IOConnection };
+	allowedVariables: string[];
 }
 
 
