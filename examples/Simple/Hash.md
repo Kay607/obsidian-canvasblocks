@@ -6,6 +6,8 @@
 ```
 
 ```pycanvasblock
+hash_functions_supported = "md5|sha1|sha224|sha256|sha384|sha512"
+
 isFile = False
 match parameter_data["type"]:
 	case "file":
@@ -23,9 +25,10 @@ BUF_SIZE = 65536  # Read in 64kb chunks
 
 
 if len(arrow_parameters) > 0:
-    hash_function = arrow_parameters[0]["text"]
+	hash_function = arrow_parameters[0]["text"]
 else:
-	notice("Add an arrow parameter (md5|sha1|sha224|sha256|sha384|sha512)")
+	notice(f"Add an arrow parameter (${hash_functions_supported})")
+	exit()
 
 hash_function = hash_function.lower().replace(" ", "").replace("-", "")
 
@@ -41,6 +44,9 @@ elif hash_function == "sha384":
 	hash = hashlib.sha384()
 elif hash_function == "sha512":
 	hash = hashlib.sha512()
+else:
+	notice(f"Hash function must be one of (${hash_functions_supported})")
+	exit()
 
 if isFile:
 	with open(get_parameter_file_path(), 'rb') as f:
