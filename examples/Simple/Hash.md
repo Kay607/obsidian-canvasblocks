@@ -45,7 +45,7 @@ elif hash_function == "sha384":
 elif hash_function == "sha512":
 	hash = hashlib.sha512()
 else:
-	notice(f"Hash function must be one of (${hash_functions_supported})")
+	notice(f"Hash function must be one of ({hash_functions_supported})")
 	exit()
 
 if isFile:
